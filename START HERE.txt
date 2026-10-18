@@ -1,26 +1,53 @@
 THEATER SIMPLE - WITHOUT OBS
 
+VERSION 1.3.0-rc.1 - POWERPOINT ANIMATION TEST RELEASE
+Real animated playback still needs validation on a PC with licensed,
+activated Microsoft PowerPoint. Keep your working installation until the
+rehearsal below succeeds. This prerelease does not replace the stable release.
+
 OPEN THE APP
 Double-click Start Theater.cmd. It starts the local service and opens the
 Theater Simple desktop app. Keep its control window open during the show.
 
 ON ANOTHER WINDOWS PC
-1. Copy Theater Simple Windows - Direct content.zip to a 64-bit Intel/AMD
-   Windows 11 PC.
+1. Download the Windows ZIP for this animation test from:
+   https://github.com/vmihalis/theater-simple/releases/tag/v1.3.0-rc.1
+   Copy it to a 64-bit Intel/AMD Windows 11 PC.
 2. Right-click the ZIP > Extract All. Put the extracted folder in Documents.
 3. Double-click Start Theater.cmd in that folder.
    The desktop app and its runtime are included. OBS, Codex, npm, and a
    separate Node installation are not needed.
 4. Install and activate Microsoft PowerPoint on that PC if you want to
    select PowerPoint files directly. PDF files do not need PowerPoint.
+   Open PowerPoint once and finish Office setup before your rehearsal.
+
+UPDATING AN EXISTING INSTALLATION
+1. Stop captions, close the app and projector, then run Stop Theater.cmd
+   in the old app folder.
+2. Extract the new ZIP into a new folder. Keep the old folder as a backup.
+3. Copy the old data folder into the new app folder to keep uploaded files,
+   settings, and the app's website session. Keep the app stopped while copying.
+4. If you changed the welcome picture, copy public/welcome.jpg (or your
+   chosen image). Reapply only your custom rules from public/style.css to
+   the new stylesheet; do not replace the whole new stylesheet with the old
+   file. Reapply any welcome wording you edited in public/index.html or
+   public/stage.html too.
+5. Open Start Theater.cmd from the new folder and enter your Soniox key
+   again. Rehearse before the event. Run only one app copy at a time.
 
 CHOOSE YOUR CONTENT ONCE
 - PDF: Click Choose file and select the PDF. It appears directly with captions.
   Use Previous and Next below the preview to change pages. No window picker.
 - PowerPoint: Click Choose file and select a .pptx or .ppsx file. Wait briefly
-  while PowerPoint prepares the slides. They appear directly with captions,
+  while PowerPoint opens the real slideshow. It appears with captions,
   using the same Previous and Next controls. No second selection or window picker.
-  This uses static slides: animations, transitions, video, and audio do not play.
+  Animations and transitions play. Next advances the next animation or slide.
+  Use your clicker with Theater Simple, its projector, or the slideshow focused.
+  Focus PowerPoint slideshow brings forward the same slideshow. Clicking
+  another application gives that application control of the clicker.
+  Keep the slideshow open and unminimized. Picture capture does not include audio.
+  The app uses a private read-only copy and does not edit your original file.
+  You can rehearse with one monitor; a second screen is not required to test.
   For older .ppt/.pps files, save a .pptx or PDF copy in PowerPoint first.
   If a deck links to external media or data, embed those items or export a PDF.
 - Website: Enter its address and click Show website. The desktop app opens
@@ -37,15 +64,16 @@ Use Windows display mode Extend. Holding and Blackout hide the presentation,
 camera, and captions between speakers; Live presentation shows them.
 
 OTHER WINDOWS AND BROWSER MODE
-For an incoming Zoom share or PowerPoint animations/video, expand
-Other windows - Zoom or animated slides. Open that content in its original
+For an incoming Zoom share or content in another app, expand
+Other windows - Zoom or another app. Open that content in its original
 app, click Choose window, and select its window. Advance the original app;
 the projector follows. Keep it open and unminimized. Do not capture this
 control window or the projector, which would create a repeating picture.
 
 You can also open http://127.0.0.1:43120/ in Edge or Chrome while the service
-is running. Direct PDF and PowerPoint files still work. Automatic website
-capture requires the Theater Simple desktop app launched by Start Theater.cmd.
+is running. Direct PDFs and static PowerPoint slides still work. Automatic
+animated PowerPoint and website capture requires the Theater Simple desktop
+app launched by Start Theater.cmd.
 In a normal browser, a website needs a separate browser window and manual
 Choose window selection. Use that fallback if a site needs an existing login,
 pop-up login flow, or browser features unavailable in the desktop app.
@@ -94,9 +122,21 @@ Theater.cmd. Closing the desktop app alone leaves the local service running.
 Use one extracted copy per PC at a time.
 
 TEST CONTENT
-Use your own PDF and PowerPoint, or enter http://127.0.0.1:43120/demo
+On the PC with activated PowerPoint:
+1. Click Choose file and select tests/fixtures/animation-rehearsal.pptx
+   inside this app folder.
+2. Click Next once: the first animated line should appear on slide 1.
+   Click Next again: the second line should appear on slide 1.
+   Click Next a third time: the presentation should move to slide 2.
+3. Click Open projector. Repeat using Page Down or your clicker with the
+   app control panel, projector, and PowerPoint slideshow focused in turn.
+   All views should follow the same slideshow.
+4. Under Soniox key & caption test, click Show test. Check that the caption
+   appears below the animated picture.
+
+Then test your own PDF and PowerPoint, or enter http://127.0.0.1:43120/demo
 as a website. Rehearse the projector, both translation directions, Zoom
-audio, and camera on the destination hardware before the event.
+sharing, audio, and camera on the destination hardware before the event.
 
 THIRD-PARTY SOFTWARE
 Theater Simple: MIT, see LICENSE.

@@ -14,9 +14,9 @@
           <form id="website-form" class="website-form"><label for="website-url">Or show a website</label><div class="input-row"><input id="website-url" type="text" inputmode="url" placeholder="https://example.com" autocomplete="url" required><button id="website-button" class="button secondary" type="submit">Show website</button></div></form>
           <p id="website-help" class="hint">The website opens in its own window. Browse there; the projector follows automatically.</p>
           <button id="browse-website" class="button secondary" hidden>Browse website ↗</button><button id="open-desktop" class="button secondary" hidden>Open desktop app</button>
-          <p class="hint">PowerPoint uses static slides, with the same Previous / Next controls as PDFs.</p>
-          <details id="window-options" class="window-options"><summary>Other windows · Zoom or animated slides</summary>
-          <p class="hint">For a remote presenter, open their Zoom share in its own window. For animations or videos, open the original presentation in PowerPoint.</p>
+          <p class="hint">PowerPoint animations play in the desktop app (Microsoft PowerPoint required). Use Next or your clicker in Theater Simple; keep the slideshow window open and unminimized.</p>
+          <details id="window-options" class="window-options"><summary>Other windows · Zoom or another app</summary>
+          <p class="hint">For a remote presenter, open their Zoom share in its own window. You can also connect another application here.</p>
           <div class="button-row"><button id="choose-source" class="button primary">Choose window</button><button id="stop-source" class="button quiet" disabled>Stop picture</button></div>
           <p id="source-status" class="status-line">Only needed for content in another window.</p><p class="hint">Choose the PowerPoint, website, or Zoom content window. Keep it open and unminimized.</p></details>
         </section>
@@ -28,7 +28,7 @@
       <div class="show-column">
         <section class="card preview-card"><div class="section-heading"><h2>Theater preview</h2><span id="mode-label" class="badge dark">HOLDING</span></div>
           <div class="program" id="program"><div class="visual-area"><video id="preview-video" autoplay muted playsinline></video><canvas id="preview-pdf" class="pdf-page" role="img" aria-label="PDF presentation page" hidden></canvas><div id="preview-placeholder" class="program-message"><span class="stage-symbol">T</span><strong>Welcome.</strong><span>The presentation will begin shortly.</span></div><video id="preview-camera" class="camera-inset" autoplay muted playsinline hidden></video></div><div id="preview-captions" class="caption-band"><div id="preview-caption-text" class="caption-text"></div></div></div>
-          <div id="pdf-controls" class="pdf-controls" hidden><p id="pdf-name" class="status-line"></p><div class="pdf-navigation" role="group" aria-label="PDF pages"><button id="pdf-previous" class="button secondary" disabled>← Previous</button><span id="pdf-page-status" role="status">Loading PDF…</span><button id="pdf-next" class="button secondary" disabled>Next →</button></div></div>
+          <button id="focus-powerpoint" class="button secondary" hidden>Focus PowerPoint slideshow ↗</button><div id="pdf-controls" class="pdf-controls" hidden><p id="pdf-name" class="status-line"></p><div class="pdf-navigation" role="group" aria-label="Presentation controls"><button id="pdf-previous" class="button secondary" disabled>← Previous</button><span id="pdf-page-status" role="status">Loading PDF…</span><button id="pdf-next" class="button secondary" disabled>Next →</button></div></div>
           <div class="mode-controls" role="group" aria-label="What the audience sees"><button class="mode-button active" data-mode="holding" aria-pressed="true">Holding</button><button class="mode-button" data-mode="live" aria-pressed="false">Live presentation</button><button class="mode-button blackout" data-mode="blackout" aria-pressed="false">Blackout</button></div>
           <p class="hint">Choose Live presentation when you are ready. Holding and Blackout also hide the camera and captions.</p>
         </section>

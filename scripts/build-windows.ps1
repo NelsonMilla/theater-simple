@@ -18,7 +18,7 @@ foreach ($directory in @('lib','public','licenses','tests','desktop','docs','scr
 }
 New-Item -ItemType Directory -Path (Join-Path $packageRoot 'node_modules') | Out-Null
 Copy-Item -LiteralPath (Join-Path $sourceRoot 'node_modules/ws') -Destination (Join-Path $packageRoot 'node_modules/ws') -Recurse
-foreach ($file in @('server.mjs','package.json','package-lock.json','README.md','LICENSE','open-presentation.ps1','convert-presentation.ps1','Start Theater.cmd','Start Theater.ps1','Stop Theater.cmd','Stop Theater.ps1','START HERE.txt')) {
+foreach ($file in @('server.mjs','package.json','package-lock.json','README.md','LICENSE','open-presentation.ps1','convert-presentation.ps1','validate-presentation.ps1','run-slideshow.ps1','Start Theater.cmd','Start Theater.ps1','Stop Theater.cmd','Stop Theater.ps1','START HERE.txt')) {
     Copy-Item -LiteralPath (Join-Path $sourceRoot $file) -Destination $packageRoot
 }
 New-Item -ItemType Directory -Path (Join-Path $packageRoot 'runtime') | Out-Null

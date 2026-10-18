@@ -2,6 +2,8 @@
 
 A small Windows presentation app for a theater projector and hybrid Zoom events. Choose a PDF or PowerPoint once, or enter a website address, and show the content above translated captions. OBS is not required.
 
+**1.3.0-rc.1 is a test release for PowerPoint animations.** Real animated playback still awaits validation on a PC with licensed, activated Microsoft PowerPoint. Use [the 1.3.0-rc.1 prerelease](https://github.com/vmihalis/theater-simple/releases/tag/v1.3.0-rc.1) to test this feature; the latest stable release remains separate. Keep your working installation until the rehearsal succeeds.
+
 ## Windows quickstart
 
 1. Download the Windows ZIP from [the latest release](https://github.com/vmihalis/theater-simple/releases/latest).
@@ -10,18 +12,39 @@ A small Windows presentation app for a theater projector and hybrid Zoom events.
 4. Click **Open projector**, move that window to the extended display, then click **Full screen**.
 5. Use **Live presentation** to show content, or **Holding** / **Blackout** between speakers.
 
+For the animation test release, use the prerelease link above instead of the latest stable download.
+
 Windows 11 x64 is the tested platform. The release includes Node.js, Electron, and browser assets; no developer tools are needed. Internet is needed for websites and live Soniox translation. PDF presentation and caption test text work offline.
+
+### Updating an existing installation
+
+1. Stop captions, close Theater Simple and its projector, then run **Stop Theater.cmd** in the old folder.
+2. Extract the new ZIP into a **new folder**. Keep the old folder as a backup.
+3. To keep uploaded files and settings, copy the old **data** folder into the new app folder while the app is stopped.
+4. If you customized the holding screen, also copy **public/welcome.jpg** (or your chosen image) and reapply only your custom rules from **public/style.css** to the new stylesheet. Do not replace the new stylesheet with the entire old file. Keep any custom welcome wording you edited in `public/index.html` or `public/stage.html` separately and reapply it too.
+5. Start the new copy with **Start Theater.cmd**, enter your Soniox key again, and rehearse your presentation. Run only one copy at a time.
 
 ## Content
 
 | Content | How it works |
 | --- | --- |
 | PDF | Select once. Use **Previous** / **Next** in the app. |
-| PowerPoint | Select `.pptx` or `.ppsx` once. Installed, activated **Microsoft PowerPoint** exports static slides locally; use the same page controls. |
+| PowerPoint | Select `.pptx` or `.ppsx` once in the desktop app. Installed, activated **Microsoft PowerPoint** runs the real slideshow with animations and transitions; its picture connects automatically. |
 | Website | Enter its address once. The desktop app opens one website window and automatically captures it. Use **Browse website** to click and scroll there; the projector follows the same page. |
 | Another app or a remote Zoom presenter | Expand **Other windows**, then explicitly choose the presentation window. |
 
-PowerPoint animations, transitions, video, and audio do **not** play in the direct-file route. Save older `.ppt` / `.pps` files as `.pptx` or PDF first. Decks linking to external media or data must be made self-contained or exported to PDF. Animated slides can use the original PowerPoint window through **Other windows** instead.
+For PowerPoint, **Next** advances the next animation or slide in that same slideshow. Your clicker (Page Down / Page Up or arrow keys) works when the Theater Simple control panel, projector, or PowerPoint slideshow has focus. **Focus PowerPoint slideshow** brings forward the original slideshow for interactive objects. Keep that window open and unminimized. There is no separate editing window for this read-only copy. A clicker focused in another application still controls that application; there is no global keyboard interception.
+
+PowerPoint must be installed and activated on each presentation PC; it is not included in the ZIP. Open it once and finish any Office setup before the rehearsal. The app opens a private copy, so the original presentation file is not edited. You can rehearse with a single monitor; an extended second display is only needed to place the projector output on a separate screen.
+
+### Animation rehearsal on the licensed PC
+
+1. Open **Start Theater.cmd**, click **Choose file**, and select `tests/fixtures/animation-rehearsal.pptx` from the extracted app folder.
+2. Click **Next** once: the first animated line should appear while the presentation stays on slide 1. Click it again: the second line should appear. The third click should advance to slide 2.
+3. Click **Open projector**. Repeat the test using Page Down or your clicker with the control panel, projector, and PowerPoint slideshow focused in turn. Each output should follow the same slideshow.
+4. Under **Soniox key & caption test**, use **Show test** and check that the test caption appears below the animated presentation. Then rehearse your own deck, Zoom share, and audio.
+
+Save older `.ppt` / `.pps` files as `.pptx` or PDF first. Decks linking to external media or data must be made self-contained or exported to PDF. Macros and ActiveX controls are not supported. Embedded video picture can play through PowerPoint, but audio is not included in Theater Simple's picture capture; route and test presentation audio separately. Browser-only mode retains the static PowerPoint conversion and does not play animations.
 
 The website window has its own browser session. Existing Edge logins are not imported. Some pop-up login flows, DRM, or other browser features may need the ordinary browser plus manual window capture. Automatic website capture works in the desktop app, not in a normal browser tab. Picture capture does not carry website or presentation audio.
 
@@ -59,7 +82,7 @@ npm test
 npm start
 ```
 
-Open `http://127.0.0.1:43120/`. Browser-only mode supports direct PDFs and PowerPoint but uses manual window capture for websites.
+Open `http://127.0.0.1:43120/`. Browser-only mode supports direct PDFs and static PowerPoint slides but uses manual window capture for websites. Launch the desktop app for automatic animated PowerPoint and website capture.
 
 To test using the bundled Node runtime:
 
@@ -75,7 +98,7 @@ After setup:
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-windows.ps1
 ```
 
-The script writes `dist/Theater Simple Windows.zip` and a `.sha256` file. It packages an explicit source/runtime allowlist, including only the `ws` production dependency. It excludes user data, browser profiles, keys, logs, downloads, and uploaded documents. It refuses to overwrite an existing package; use `-PackageName 'Theater Simple Windows 1.2.0'` for a new output name.
+The script writes `dist/Theater Simple Windows.zip` and a `.sha256` file. It packages an explicit source/runtime allowlist, including only the `ws` production dependency. It excludes user data, browser profiles, keys, logs, downloads, and uploaded documents. It refuses to overwrite an existing package; use `-PackageName 'Theater Simple Windows 1.3.0-rc.1'` for a new output name.
 
 ## Files and stopping
 

@@ -24,6 +24,9 @@ let contentGeneration = 0;
 let pdf = null;
 let pdfPageCount = 0;
 let pdfReady = false;
+let powerPointName = '';
+let powerPointBusy = false;
+let powerPointPosition = null;
 const program = createProgram({ program: $('program'), video: $('preview-video'), pdfCanvas: $('preview-pdf'), camera: $('preview-camera'), placeholder: $('preview-placeholder'), captions: $('preview-captions'), text: $('preview-caption-text'), onPdfStatus(value) {
   if (!pdf) return;
   pdfPageCount = value.pageCount || 0;
@@ -55,8 +58,10 @@ function streamActive(stream) { return !!stream?.getVideoTracks().some(track => 
 function publish() {
   program.render({ mode, source, pdf, camera, caption: serverConnected ? state?.captions?.translation || '' : '', captionsEnabled: serverConnected && state?.captions?.enabled !== false });
   try { if (stageWindow && !stageWindow.closed && stageWindow.TheaterStage) stageWindow.TheaterStage.update({ mode, source, pdf, camera }); } catch { /* A closed or navigated output is handled by its status below. */ }
-  $('pdf-controls').hidden = !pdf;
-  $('pdf-name').textContent = pdf?.name || '';
+  $('pdf-controls').hidden = !pdf && sourceKind !== 'powerpoint';
+  $('pdf-name').textContent = pdf?.name || (sourceKind === 'powerpoint' ? powerPointName : '');
+  $('focus-powerpoint').hidden = sourceKind !== 'powerpoint';
+  if (sourceKind === 'powerpoint') $('pdf-page-status').textContent = powerPointPosition ? `Slide ${powerPointPosition.slide} of ${powerPointPosition.slides} · Animation ${Math.max(0, powerPointPosition.click)} of ${powerPointPosition.clicks}` : 'Live PowerPoint';
   $('browse-website').hidden = sourceKind !== 'website' || !window.theaterDesktop;
   $('zoom-help').textContent = pdf || window.theaterDesktop && source ? 'In Zoom, share the Theater Simple · Projector window. Your presentation and captions appear together.' : 'In Zoom, share the original presentation window and use Zoom translated captions. A remote presenter can share normally.';
   $('mode-label').textContent = mode === 'live' ? 'LIVE PRESENTATION' : mode.toUpperCase();
@@ -72,6 +77,7 @@ function updateButtons() {
   $('stop-source').disabled = !source && !choosingSource;
   $('pdf-previous').disabled = !pdfReady || !pdf || pdf.page <= 1;
   $('pdf-next').disabled = !pdfReady || !pdf || pdf.page >= pdfPageCount;
+  if (sourceKind === 'powerpoint') { $('pdf-previous').disabled = powerPointBusy; $('pdf-next').disabled = powerPointBusy; }
   $('start-camera').disabled = choosingCamera || !!camera;
   $('stop-camera').disabled = !camera && !choosingCamera;
   $('start-captions').disabled = captionsBusy || serverBusy || !serverConnected || !state?.captions?.hasKey;
@@ -136,6 +142,7 @@ async function showFile(file) {
   $('content-status').textContent = file.type === 'powerpoint' ? `Preparing ${file.name}…` : '';
   try {
     if (file.type === 'powerpoint') {
+      if (window.theaterDesktop?.openPowerPoint) { await showPowerPoint(file, generation); return; }
       const result = await api('/api/prepare-file', { id: file.id });
       if (generation !== contentGeneration) return;
       file = result.file;
@@ -146,10 +153,75 @@ async function showFile(file) {
   } finally { if (generation === contentGeneration) $('content-status').hidden = true; }
 }
 
+function detachPowerPointSource() {
+  if (sourceKind !== 'powerpoint') return;
+  const previous = source;
+  source = null; sourceKind = null; powerPointName = ''; powerPointPosition = null; powerPointBusy = false;
+  stopTracks(previous);
+  publish();
+}
+async function showPowerPoint(file, generation) {
+  const sourceToken = ++sourceGeneration;
+  choosingSource = true; updateButtons();
+  // Opening another native show closes the old one, even if the new file fails.
+  // Retire its picture first so its queued ended event cannot affect a replacement.
+  detachPowerPointSource();
+  let selected, nativeSession;
+  try {
+    const opened = await window.theaterDesktop.openPowerPoint(file.id);
+    nativeSession = opened.token;
+    if (generation !== contentGeneration || sourceToken !== sourceGeneration) { await window.theaterDesktop.closePowerPoint(nativeSession); return; }
+    selected = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: { ideal: 30, max: 30 } }, audio: false });
+    if (generation !== contentGeneration || sourceToken !== sourceGeneration) { stopTracks(selected); await window.theaterDesktop.closePowerPoint(nativeSession); return; }
+    const track = selected.getVideoTracks()[0];
+    if (!track || track.readyState !== 'live') throw new Error('PowerPoint picture did not connect.');
+    stopTracks(source); source = selected; sourceKind = 'powerpoint'; powerPointName = file.name; powerPointPosition = null;
+    pdf = null; pdfReady = false; pdfPageCount = 0; mode = 'live';
+    track.addEventListener('ended', () => {
+      // A cancelled picker changes the attempt generation, but this remains the
+      // active picture. Stream identity determines which ended event is current.
+      if (source !== selected) return;
+      detachPowerPointSource();
+      window.theaterDesktop.closePowerPoint(nativeSession).catch(() => {});
+      notice('PowerPoint slideshow ended. Click Show on the file to restart it.');
+    });
+    $('source-status').textContent = 'Live PowerPoint connected. Next plays the next animation or slide.';
+    $('window-options').open = false;
+    publish();
+    notice('PowerPoint ready, with animations. Use Next or your clicker here.');
+    await updatePowerPointPosition();
+  } catch (error) {
+    if (selected && selected !== source) stopTracks(selected);
+    const detail = generation === contentGeneration && sourceToken === sourceGeneration ? await window.theaterDesktop.powerPointError().catch(() => '') : '';
+    if (nativeSession !== undefined) await window.theaterDesktop.closePowerPoint(nativeSession).catch(() => {});
+    if (generation === contentGeneration && sourceToken === sourceGeneration) {
+      throw new Error(detail || error.message || 'Could not open the PowerPoint slideshow.');
+    }
+  } finally { if (sourceToken === sourceGeneration) { choosingSource = false; updateButtons(); } }
+}
+async function updatePowerPointPosition() {
+  if (sourceKind !== 'powerpoint' || powerPointBusy) return;
+  const current = source;
+  try {
+    const result = await window.theaterDesktop.powerPointCommand('status');
+    if (source === current && sourceKind === 'powerpoint') { powerPointPosition = result; publish(); }
+  } catch { /* The capture-ended event handles a closed slideshow. */ }
+}
+setInterval(updatePowerPointPosition, 1500);
+async function advancePowerPoint(delta) {
+  if (powerPointBusy || sourceKind !== 'powerpoint') return;
+  powerPointBusy = true; updateButtons(); const current = source;
+  try { const result = await window.theaterDesktop.powerPointCommand(delta > 0 ? 'next' : 'previous'); if (source === current) powerPointPosition = result; }
+  catch (error) { if (source === current) notice(error.message, true); }
+  finally { if (source === current) { powerPointBusy = false; publish(); } }
+}
+$('focus-powerpoint').addEventListener('click', () => window.theaterDesktop.powerPointCommand('focus').catch(error => notice(error.message, true)));
+
 function showPdf(file) {
   sourceGeneration++; choosingSource = false;
   stopTracks(source); source = null; sourceKind = null;
   window.theaterDesktop?.closeWebsite().catch(() => {});
+  window.theaterDesktop?.closePowerPoint?.().catch(() => {});
   pdf = null; publish();
   pdfPageCount = 0; pdfReady = false;
   pdf = { id: file.id, name: file.name, type: file.type, url: file.presentationUrl || `/files/${encodeURIComponent(file.id)}`, page: 1 };
@@ -160,6 +232,7 @@ function showPdf(file) {
   notice('Presentation ready. Use Previous and Next below the preview.');
 }
 function changePdfPage(delta) {
+  if (sourceKind === 'powerpoint') { advancePowerPoint(delta); return; }
   if (!pdf || !pdfReady) return;
   const page = Math.max(1, Math.min(pdfPageCount, pdf.page + delta));
   if (page === pdf.page) return;
@@ -168,9 +241,9 @@ function changePdfPage(delta) {
 $('pdf-previous').addEventListener('click', () => changePdfPage(-1));
 $('pdf-next').addEventListener('click', () => changePdfPage(1));
 document.addEventListener('keydown', event => {
-  if (!pdf || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey || event.target.closest('input,textarea,select,[contenteditable]')) return;
-  if (['ArrowRight', 'PageDown', 'ArrowLeft', 'PageUp'].includes(event.key)) {
-    event.preventDefault(); changePdfPage(['ArrowRight', 'PageDown'].includes(event.key) ? 1 : -1);
+  if ((!pdf && sourceKind !== 'powerpoint') || event.repeat || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey || event.target.closest('input,textarea,select,[contenteditable]')) return;
+  if (['ArrowRight', 'PageDown', 'ArrowLeft', 'PageUp', 'ArrowDown', 'ArrowUp', ' '].includes(event.key)) {
+    event.preventDefault(); changePdfPage(['ArrowRight', 'PageDown', 'ArrowDown', ' '].includes(event.key) ? 1 : -1);
   }
 });
 
@@ -197,6 +270,7 @@ $('website-form').addEventListener('submit', async event => {
     if (!window.theaterDesktop) { openContent(url.href); $('window-options').open = true; return; }
     choosingSource = true; updateButtons();
     notice('Opening website…');
+    detachPowerPointSource();
     await window.theaterDesktop.openWebsite(url.href);
     if (generation !== sourceGeneration) return;
     selected = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: false });
@@ -217,8 +291,8 @@ $('website-form').addEventListener('submit', async event => {
 });
 $('browse-website').addEventListener('click', () => window.theaterDesktop?.focusWebsite().catch(error => notice(error.message, true)));
 $('open-desktop').hidden = !!window.theaterDesktop;
-$('website-help').textContent = window.theaterDesktop ? 'Browse in the website window; its picture connects automatically with captions.' : 'For automatic website display, use Open desktop app. In this browser, websites need Choose window.';
-$('open-desktop').addEventListener('click', event => withButton(event.currentTarget, async () => { await api('/api/open-desktop', {}); notice('Desktop app opened. Use that window for automatic website display.'); }));
+$('website-help').textContent = window.theaterDesktop ? 'Browse in the website window; its picture connects automatically with captions.' : 'For automatic website display, use Open desktop app. In this browser, PowerPoint is static and websites need Choose window.';
+$('open-desktop').addEventListener('click', event => withButton(event.currentTarget, async () => { await api('/api/open-desktop', {}); notice('Desktop app opened. Use that window for PowerPoint animations and automatic website display.'); }));
 document.querySelector('.help-link').addEventListener('click', event => {
   if (!window.theaterDesktop) return;
   event.preventDefault();
@@ -258,6 +332,7 @@ $('choose-source').addEventListener('click', async () => {
     const track = selected.getVideoTracks()[0];
     if (!track || track.readyState !== 'live') throw new Error('The selected window could not be captured. Please try again.');
     const previous = source; source = selected; sourceKind = 'window'; stopTracks(previous); pdf = null; pdfReady = false; pdfPageCount = 0;
+    // Leave an owned slideshow running if the operator manually selected it.
     track.addEventListener('ended', () => { if (source !== selected) return; source = null; sourceKind = null; $('source-status').textContent = 'Sharing stopped. Choose a presentation window to resume.'; publish(); });
     $('source-status').textContent = `Selected: ${track.label || 'Presentation window'}`;
     notice('Picture connected. Use Live presentation to show it on the projector.');
@@ -267,7 +342,7 @@ $('choose-source').addEventListener('click', async () => {
     if (generation === sourceGeneration) notice(error.name === 'NotAllowedError' || error.name === 'AbortError' ? (source || pdf ? 'Window selection cancelled. Your previous presentation is still connected.' : 'No window selected. Choose window when ready.') : error.message, !['NotAllowedError', 'AbortError'].includes(error.name));
   } finally { if (generation === sourceGeneration) { choosingSource = false; updateButtons(); } }
 });
-$('stop-source').addEventListener('click', () => { sourceGeneration++; choosingSource = false; stopTracks(source); source = null; sourceKind = null; $('source-status').textContent = 'Presentation picture stopped. Choose a window to resume.'; publish(); });
+$('stop-source').addEventListener('click', () => { sourceGeneration++; contentGeneration++; choosingSource = false; stopTracks(source); source = null; sourceKind = null; window.theaterDesktop?.closePowerPoint?.().catch(() => {}); $('source-status').textContent = 'Presentation picture stopped. Choose a window to resume.'; publish(); });
 document.querySelectorAll('[data-mode]').forEach(button => button.addEventListener('click', () => { mode = button.dataset.mode; publish(); }));
 $('open-projector').addEventListener('click', () => {
   if (stageWindow && !stageWindow.closed) { try { if (stageWindow.location.origin === location.origin) { stageWindow.focus(); publish(); return; } } catch {} }
@@ -275,7 +350,11 @@ $('open-projector').addEventListener('click', () => {
   if (!stageWindow) { $('projector-status').textContent = 'Popup blocked. Allow popups for this local app, then try again.'; notice('Allow popups for this local app to open the projector window.', true); return; }
   $('projector-status').textContent = 'Projector window opened. Move it to the theater screen, then click Full screen.';
 });
-window.addEventListener('message', event => { if (event.origin === location.origin && event.source === stageWindow && event.data?.type === 'theater-stage-ready') publish(); });
+window.addEventListener('message', event => {
+  if (event.origin !== location.origin || event.source !== stageWindow) return;
+  if (event.data?.type === 'theater-stage-ready') publish();
+  if (event.data?.type === 'theater-advance' && [-1, 1].includes(event.data.delta) && mode === 'live') changePdfPage(event.data.delta);
+});
 setInterval(() => { if (stageWindow?.closed) { stageWindow = null; $('projector-status').textContent = 'Projector window closed. Open it again when ready.'; } }, 1500);
 
 function languageSettings() { return $('caption-direction').value === 'ja-en' ? { targetLanguage: 'en', sourceLanguages: ['ja'] } : { targetLanguage: 'ja', sourceLanguages: ['en'] }; }
@@ -367,6 +446,7 @@ window.addEventListener('beforeunload', event => { if (streamActive(source) || s
 window.addEventListener('pagehide', () => {
   sourceGeneration++; cameraGeneration++; captionGeneration++;
   stopTracks(source); stopTracks(camera); capture?.fail('Control panel closed.');
+  window.theaterDesktop?.closePowerPoint?.().catch(() => {});
   try { stageWindow?.postMessage({ type: 'theater-control-closed' }, location.origin); } catch {}
   events.close(); program.close();
 });

@@ -44,5 +44,12 @@ $('fullscreen-button').addEventListener('click', async () => {
 document.addEventListener('fullscreenchange', () => { $('fullscreen-button').textContent = document.fullscreenElement ? 'Exit full screen' : 'Full screen'; revealTools(); });
 document.addEventListener('pointermove', revealTools);
 document.addEventListener('keydown', revealTools);
+document.addEventListener('keydown', event => {
+  if (!attached || event.repeat || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey || event.target.closest('input,textarea,select,[contenteditable]')) return;
+  if (['ArrowRight', 'PageDown', 'ArrowLeft', 'PageUp', 'ArrowDown', 'ArrowUp', ' '].includes(event.key)) {
+    event.preventDefault();
+    window.opener?.postMessage({ type: 'theater-advance', delta: ['ArrowRight', 'PageDown', 'ArrowDown', ' '].includes(event.key) ? 1 : -1 }, location.origin);
+  }
+});
 setInterval(() => { if (attached && (!window.opener || window.opener.closed)) window.TheaterStage.disconnected(); }, 1500);
 window.addEventListener('pagehide', () => { events.close(); program.close(); });
