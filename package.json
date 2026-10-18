@@ -1,0 +1,13 @@
+{
+  "name": "theater-simple",
+  "version": "1.2.0",
+  "private": true,
+  "type": "module",
+  "description": "Portable Windows presentation and translated-caption control, without OBS",
+  "license": "MIT",
+  "repository": {"type": "git", "url": "https://github.com/vmihalis/theater-simple.git"},
+  "engines": {"node": ">=24.19.0"},
+  "scripts": {"start": "node server.mjs", "test": "node --test tests/*.test.mjs", "vendor:pdfjs": "node scripts/vendor-pdfjs.mjs"},
+  "dependencies": {"ws": "8.22.0"},
+  "devDependencies": {"pdfjs-dist": "6.4.299"}
+}

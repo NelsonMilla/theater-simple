@@ -1,0 +1,108 @@
+THEATER SIMPLE - WITHOUT OBS
+
+OPEN THE APP
+Double-click Start Theater.cmd. It starts the local service and opens the
+Theater Simple desktop app. Keep its control window open during the show.
+
+ON ANOTHER WINDOWS PC
+1. Copy Theater Simple Windows - Direct content.zip to a 64-bit Intel/AMD
+   Windows 11 PC.
+2. Right-click the ZIP > Extract All. Put the extracted folder in Documents.
+3. Double-click Start Theater.cmd in that folder.
+   The desktop app and its runtime are included. OBS, Codex, npm, and a
+   separate Node installation are not needed.
+4. Install and activate Microsoft PowerPoint on that PC if you want to
+   select PowerPoint files directly. PDF files do not need PowerPoint.
+
+CHOOSE YOUR CONTENT ONCE
+- PDF: Click Choose file and select the PDF. It appears directly with captions.
+  Use Previous and Next below the preview to change pages. No window picker.
+- PowerPoint: Click Choose file and select a .pptx or .ppsx file. Wait briefly
+  while PowerPoint prepares the slides. They appear directly with captions,
+  using the same Previous and Next controls. No second selection or window picker.
+  This uses static slides: animations, transitions, video, and audio do not play.
+  For older .ppt/.pps files, save a .pptx or PDF copy in PowerPoint first.
+  If a deck links to external media or data, embed those items or export a PDF.
+- Website: Enter its address and click Show website. The desktop app opens
+  the site in its own window and connects its picture automatically.
+  Click Browse website to bring it forward. Scroll, click, and navigate there
+  normally; the projector follows. Keep the website window open and unminimized.
+  This is a separate browser session. Your existing Edge logins are not copied.
+- To reuse a file already added, click Show beside its name.
+
+OPEN THE PROJECTOR
+Click Open projector. Move that window to the theater's extended display,
+then click Full screen. The presentation appears above the caption strip.
+Use Windows display mode Extend. Holding and Blackout hide the presentation,
+camera, and captions between speakers; Live presentation shows them.
+
+OTHER WINDOWS AND BROWSER MODE
+For an incoming Zoom share or PowerPoint animations/video, expand
+Other windows - Zoom or animated slides. Open that content in its original
+app, click Choose window, and select its window. Advance the original app;
+the projector follows. Keep it open and unminimized. Do not capture this
+control window or the projector, which would create a repeating picture.
+
+You can also open http://127.0.0.1:43120/ in Edge or Chrome while the service
+is running. Direct PDF and PowerPoint files still work. Automatic website
+capture requires the Theater Simple desktop app launched by Start Theater.cmd.
+In a normal browser, a website needs a separate browser window and manual
+Choose window selection. Use that fallback if a site needs an existing login,
+pop-up login flow, or browser features unavailable in the desktop app.
+Use one control window at a time.
+
+CAPTIONS
+Select the microphone that carries the speaker's voice. Expand Soniox key &
+caption test, paste your key and Save key. Select English to Japanese or
+Japanese to English, then Start captions. The key stays only in memory and
+must be entered after the local service restarts.
+
+Start captions sends the selected microphone audio to Soniox; Stop captions
+ends it. Show test displays sample text without microphone audio, an API key,
+or a network call. Internet is required for live Soniox translation.
+Optional camera capture has its own controls and needs a hardware rehearsal.
+
+ZOOM
+Install Zoom separately and sign in with your translated-captions licensed
+account. Select the venue microphone in Zoom.
+
+For direct PDFs, PowerPoints, or websites, share the Theater Simple Projector
+window in Zoom so the presentation and Soniox captions appear together.
+Attendees can also enable Zoom captions and choose their reading language.
+For content captured from another local app, you can share that original
+window and use Zoom's own translated captions for remote attendees.
+
+For remote presenters, let them share normally in Zoom. Select the incoming
+Zoom shared-content window under Other windows to show it in the theater.
+Do not share that received view back into the same meeting. Remote Zoom audio
+needs a suitable mixer or loopback input for Soniox; the laptop microphone
+does not capture incoming voices cleanly. The app's picture capture does not
+carry presentation audio. Rehearse video audio and simultaneous camera use
+with the destination equipment.
+
+MOVING AND STOPPING
+The transfer ZIP contains the app and its runtimes. It contains
+no API key, account login, recordings, or your uploaded documents. Bring your
+Soniox key, Zoom account, and presentation files separately.
+
+After use, uploaded files live inside data/uploads. If you copy the entire
+used app folder later, those documents travel with it. Select the correct
+microphone, camera, and projector again on the destination PC.
+
+Stop captions and captures, close the app and projector, then run Stop
+Theater.cmd. Closing the desktop app alone leaves the local service running.
+Use one extracted copy per PC at a time.
+
+TEST CONTENT
+Use your own PDF and PowerPoint, or enter http://127.0.0.1:43120/demo
+as a website. Rehearse the projector, both translation directions, Zoom
+audio, and camera on the destination hardware before the event.
+
+THIRD-PARTY SOFTWARE
+Theater Simple: MIT, see LICENSE.
+Node v24.19.0: see licenses/Node-LICENSE.txt.
+Node source: https://github.com/nodejs/node/tree/v24.19.0
+Electron: see runtime/electron/LICENSE and LICENSES.chromium.html.
+ws 8.22.0: MIT, see node_modules/ws/LICENSE.
+PDF.js 6.4.299: Apache-2.0, see licenses/PDFJS-LICENSE.txt and PDFJS-NOTICE.txt.
+Zoom, Soniox and PowerPoint are separate products and services, not bundled.

@@ -1,0 +1,8 @@
+{
+  "name": "theater-simple-desktop",
+  "version": "1.2.0",
+  "private": true,
+  "main": "main.cjs",
+  "description": "Theater Simple desktop presentation window",
+  "license": "MIT"
+}

@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Theater Simple · Control</title><link rel="stylesheet" href="/style.css"></head>
+<body>
+  <header class="topbar"><a class="brand" href="/" aria-label="Theater Simple home"><span class="brand-mark" aria-hidden="true">T</span><span>Theater <strong>Simple</strong></span></a><span id="connection-status" class="badge">Connecting…</span></header>
+  <main>
+    <div class="intro"><div><p class="eyebrow">ONE LAPTOP · TWO AUDIENCES</p><h1>Put your presentation on stage.</h1><p class="lead">Your slides or website, with live translated captions. Keep this control window open.</p></div><a class="help-link" href="/demo" target="_blank" rel="noopener">Open test slides ↗</a></div>
+    <div id="notice" class="notice" role="status" aria-live="polite" hidden></div>
+    <div class="workspace">
+      <section class="setup-column" aria-label="Presentation setup">
+        <section class="card"><div class="step-heading"><span class="step">1</span><div><h2>Choose your content</h2><p>Pick a PDF or PowerPoint once, or enter a website.</p></div></div>
+          <div class="source-actions"><button id="upload-button" class="button primary">Choose file</button><input id="upload-input" type="file" accept=".pdf,.ppt,.pptx,.pps,.ppsx" hidden><span class="hint">PDF or PowerPoint</span></div>
+          <p id="upload-status" class="hint" role="status" hidden></p><p id="content-status" class="hint" role="status" hidden></p><div id="file-list" class="file-list"><p class="empty">Your files will appear here.</p></div>
+          <form id="website-form" class="website-form"><label for="website-url">Or show a website</label><div class="input-row"><input id="website-url" type="text" inputmode="url" placeholder="https://example.com" autocomplete="url" required><button id="website-button" class="button secondary" type="submit">Show website</button></div></form>
+          <p id="website-help" class="hint">The website opens in its own window. Browse there; the projector follows automatically.</p>
+          <button id="browse-website" class="button secondary" hidden>Browse website ↗</button><button id="open-desktop" class="button secondary" hidden>Open desktop app</button>
+          <p class="hint">PowerPoint uses static slides, with the same Previous / Next controls as PDFs.</p>
+          <details id="window-options" class="window-options"><summary>Other windows · Zoom or animated slides</summary>
+          <p class="hint">For a remote presenter, open their Zoom share in its own window. For animations or videos, open the original presentation in PowerPoint.</p>
+          <div class="button-row"><button id="choose-source" class="button primary">Choose window</button><button id="stop-source" class="button quiet" disabled>Stop picture</button></div>
+          <p id="source-status" class="status-line">Only needed for content in another window.</p><p class="hint">Choose the PowerPoint, website, or Zoom content window. Keep it open and unminimized.</p></details>
+        </section>
+        <section class="card"><div class="step-heading"><span class="step">2</span><div><h2>Open the projector</h2><p>Move its window to the theater screen.</p></div></div>
+          <button id="open-projector" class="button primary">Open projector ↗</button><p id="projector-status" class="status-line">Then click Full screen in the projector window.</p>
+          <p class="hint">Use Windows display mode <strong>Extend</strong>.</p><p id="zoom-help" class="hint">In Zoom, share the original presentation window and use Zoom translated captions for remote attendees.</p>
+        </section>
+      </section>
+      <div class="show-column">
+        <section class="card preview-card"><div class="section-heading"><h2>Theater preview</h2><span id="mode-label" class="badge dark">HOLDING</span></div>
+          <div class="program" id="program"><div class="visual-area"><video id="preview-video" autoplay muted playsinline></video><canvas id="preview-pdf" class="pdf-page" role="img" aria-label="PDF presentation page" hidden></canvas><div id="preview-placeholder" class="program-message"><span class="stage-symbol">T</span><strong>Welcome.</strong><span>The presentation will begin shortly.</span></div><video id="preview-camera" class="camera-inset" autoplay muted playsinline hidden></video></div><div id="preview-captions" class="caption-band"><div id="preview-caption-text" class="caption-text"></div></div></div>
+          <div id="pdf-controls" class="pdf-controls" hidden><p id="pdf-name" class="status-line"></p><div class="pdf-navigation" role="group" aria-label="PDF pages"><button id="pdf-previous" class="button secondary" disabled>← Previous</button><span id="pdf-page-status" role="status">Loading PDF…</span><button id="pdf-next" class="button secondary" disabled>Next →</button></div></div>
+          <div class="mode-controls" role="group" aria-label="What the audience sees"><button class="mode-button active" data-mode="holding" aria-pressed="true">Holding</button><button class="mode-button" data-mode="live" aria-pressed="false">Live presentation</button><button class="mode-button blackout" data-mode="blackout" aria-pressed="false">Blackout</button></div>
+          <p class="hint">Choose Live presentation when you are ready. Holding and Blackout also hide the camera and captions.</p>
+        </section>
+        <section class="card captions-card"><div class="section-heading"><h2>Translated captions</h2><span id="caption-status" class="badge">Not running</span></div>
+          <div class="caption-settings"><div><label for="caption-direction">Translation</label><select id="caption-direction"><option value="en-ja">English → Japanese</option><option value="ja-en">Japanese → English</option></select></div><div><label for="microphone-device">Caption microphone</label><select id="microphone-device"><option value="">System default microphone</option></select></div></div>
+          <div class="button-row compact"><button id="refresh-microphones" class="button quiet">Find microphones</button><span class="hint">Briefly asks for microphone permission.</span></div>
+          <div class="button-row"><button id="start-captions" class="button primary" disabled>Start captions</button><button id="stop-captions" class="button secondary" disabled>Stop captions</button><div class="level" role="meter" aria-label="Microphone level" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="audio-level-fill"></span></div></div>
+          <p id="caption-detail" class="hint">Add your Soniox key below, then start captions.</p>
+          <div class="transcript"><div><span class="transcript-label">ORIGINAL</span><p id="caption-original">Speech will appear here.</p></div><div><span class="transcript-label">TRANSLATION</span><p id="caption-translation">Translation will appear here.</p></div></div>
+          <div class="button-row"><label class="checkbox"><input id="captions-visible" type="checkbox" checked> Show captions on projector</label><button id="clear-captions" class="button quiet small">Clear text</button></div>
+          <details id="caption-setup"><summary>Soniox key &amp; caption test <span id="key-status">Key not set</span></summary><form id="caption-key-form"><label for="caption-api-key">Soniox API key</label><div class="input-row"><input id="caption-api-key" type="password" autocomplete="off" spellcheck="false" placeholder="Paste key for this session" required><button class="button secondary" type="submit">Save key</button></div><p class="hint">Kept in the local server’s memory. Enter it again after restarting the app.</p></form><form id="caption-test-form"><label for="test-caption-text">Test text · no microphone needed</label><div class="input-row"><input id="test-caption-text" value="ようこそ。字幕の表示テストです。" maxlength="1000"><button id="test-caption-button" class="button secondary" type="submit">Show test</button></div></form></details>
+          <p class="hint audio-note">Select the input carrying the speaker’s voice. Capturing a Zoom window shares its picture only; translating remote voices on the projector also needs an audio mixer or loopback input. Remote attendees can use Zoom’s own translated captions.</p>
+        </section>
+        <details class="card camera-card"><summary>Optional camera inset</summary><label for="camera-device">Camera</label><select id="camera-device"><option value="">System default camera</option></select><div class="button-row"><button id="start-camera" class="button secondary">Start camera</button><button id="stop-camera" class="button quiet" disabled>Stop camera</button></div><p id="camera-status" class="hint">Camera stays off until you start it.</p></details>
+      </div>
+    </div>
+  </main><footer>THEATER SIMPLE <span>Keep the control panel open during the show. Presentation and camera audio are never played back here.</span></footer>
+  <script type="module" src="/app.js"></script>
+</body></html>

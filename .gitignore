@@ -1,0 +1,24 @@
+# Generated dependencies and portable runtimes
+/node_modules/
+/runtime/
+/public/vendor/pdfjs/
+/.downloads/
+/dist/
+
+# Local documents, browser sessions, captions settings, and runtime logs
+/data/
+*.log
+*.pid
+*.zip
+*.zip.sha256
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Editor and OS metadata
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
