@@ -44,3 +44,20 @@ test('slideshow worker passes validation messages through unchanged', {skip: !wi
   assert.ok(reply.error.length > 0);
   assert.doesNotMatch(reply.error, /Details: step/);
 });
+
+test('slideshow worker window helper lists top-level windows with class and visibility', {skip: !windows && 'Windows only'}, async () => {
+  // Compiles the same C# the worker uses, taken from its source, and lists this session's windows.
+  const script = `
+$ErrorActionPreference = 'Stop'
+$ast = [System.Management.Automation.Language.Parser]::ParseFile('${path.join(root, 'run-slideshow.ps1').replace(/'/g, "''")}', [ref]$null, [ref]$null)
+$assignment = $ast.FindAll({ param($node) $node -is [System.Management.Automation.Language.AssignmentStatementAst] -and $node.Left.Extent.Text -eq '$filterSource' }, $true) | Select-Object -First 1
+Add-Type -TypeDefinition $assignment.Right.Expression.Value -Language CSharp
+$ids = [int[]]@(Get-Process | ForEach-Object { $_.Id })
+[TheaterSimple.TopWindows]::List($ids) | Select-Object -First 50 | ForEach-Object { [Console]::WriteLine($_) }
+`;
+  const result = spawnSync('powershell.exe', ['-NoProfile', '-STA', '-ExecutionPolicy', 'Bypass', '-Command', '-'], {input: script, encoding: 'utf8', windowsHide: true});
+  assert.equal(result.status, 0, result.stderr);
+  const lines = result.stdout.split(/\r?\n/).filter(Boolean);
+  assert.ok(lines.length > 0, `No windows listed. stderr: ${result.stderr}`);
+  for (const line of lines) assert.match(line, /^\d+\|[^|]*\|[01]$/);
+});

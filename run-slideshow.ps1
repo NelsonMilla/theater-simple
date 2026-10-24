@@ -8,6 +8,8 @@ $previousSecurity = $null
 $previousAlerts = $null
 $restoreSettings = $false
 $busyRetry = $false
+$nativeHelpers = $false
+$windowsBefore = @()
 $stage = 'validate'
 function Reply($value) { [Console]::WriteLine(($value | ConvertTo-Json -Compress)); [Console]::Out.Flush() }
 
@@ -17,7 +19,9 @@ function Reply($value) { [Console]::WriteLine(($value | ConvertTo-Json -Compress
 # documents for Office automation: retry calls PowerPoint asks us to retry later.
 $filterSource = @'
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using System.Text;
 namespace TheaterSimple {
     [ComImport, Guid("00000016-0000-0000-C000-000000000046"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     public interface IOleMessageFilter {
@@ -34,6 +38,32 @@ namespace TheaterSimple {
         public int RetryRejectedCall(IntPtr taskCallee, int tickCount, int rejectType) { return rejectType == 2 && tickCount < 30000 ? 100 : -1; }
         public int MessagePending(IntPtr taskCallee, int tickCount, int pendingType) { return 2; }
     }
+    // Lists top-level windows of the given processes as "handle|class|visible".
+    public static class TopWindows {
+        delegate bool EnumProc(IntPtr window, IntPtr parameter);
+        [DllImport("user32.dll")] static extern bool EnumWindows(EnumProc callback, IntPtr parameter);
+        [DllImport("user32.dll")] static extern uint GetWindowThreadProcessId(IntPtr window, out uint processId);
+        [DllImport("user32.dll")] static extern bool IsWindowVisible(IntPtr window);
+        [DllImport("user32.dll", CharSet = CharSet.Unicode)] static extern int GetClassName(IntPtr window, StringBuilder name, int capacity);
+        public static string[] List(int[] processIds) {
+            var owners = new HashSet<uint>();
+            foreach (var id in processIds) owners.Add((uint)id);
+            var found = new List<string>();
+            EnumProc callback = (window, parameter) => {
+                uint owner;
+                GetWindowThreadProcessId(window, out owner);
+                if (owners.Contains(owner)) {
+                    var name = new StringBuilder(256);
+                    GetClassName(window, name, name.Capacity);
+                    found.Add(window.ToInt64() + "|" + name + "|" + (IsWindowVisible(window) ? "1" : "0"));
+                }
+                return true;
+            };
+            EnumWindows(callback, IntPtr.Zero);
+            GC.KeepAlive(callback);
+            return found.ToArray();
+        }
+    }
 }
 '@
 
@@ -49,13 +79,27 @@ function Position($id) {
     $view = $show.View
     return @{id=$id; slide=[int]$view.CurrentShowPosition; slides=[int]$deck.Slides.Count; click=[int]$view.GetClickIndex(); clicks=[int]$view.GetClickCount()}
 }
+function Get-PowerPointWindows {
+    if (-not $nativeHelpers) { return @() }
+    $ids = @(Get-Process -Name POWERPNT -ErrorAction SilentlyContinue | ForEach-Object { $_.Id })
+    if ($ids.Count -eq 0) { return @() }
+    return @([TheaterSimple.TopWindows]::List([int[]]$ids) | ForEach-Object {
+        $parts = $_.Split('|')
+        [pscustomobject]@{ Handle = [int64]$parts[0]; Class = $parts[1]; Visible = ($parts[2] -eq '1') }
+    })
+}
 function Get-SlideshowWindowHandle {
     $handle = $null
-    try { $handle = $show.HWND } catch {}
+    # HWND is hidden in PowerPoint's type library, so PowerShell does not list it, and its
+    # dispatch number differs between versions. Ask PowerPoint for it by name instead.
+    try { $handle = $show.GetType().InvokeMember('HWND', [Reflection.BindingFlags]::GetProperty, $null, $show, $null) } catch {}
     if (-not $handle) {
-        # HWND is hidden in PowerPoint's type library on some versions. Its stable dispatch
-        # ID (2010) avoids requiring the optional .NET Office interop assembly.
-        $handle = $show.GetType().InvokeMember('[DispID=2010]', [Reflection.BindingFlags]::GetProperty, $null, $show, $null)
+        # Otherwise take the visible PowerPoint window that appeared when this show started.
+        $new = @(Get-PowerPointWindows | Where-Object { $_.Visible -and ($windowsBefore -notcontains $_.Handle) })
+        $preferred = @($new | Where-Object { $_.Class -eq 'screenClass' })
+        if ($preferred.Count -gt 0) { $new = $preferred }
+        if ($new.Count -eq 0) { throw 'PowerPoint did not report its slideshow window.' }
+        $handle = $new[0].Handle
     }
     return ([uint64]([int64]$handle -band 0xffffffff)).ToString()
 }
@@ -75,6 +119,7 @@ try {
     $stage = 'prepare'
     try {
         Add-Type -TypeDefinition $filterSource -Language CSharp
+        $nativeHelpers = $true
         $busyRetry = ([TheaterSimple.BusyRetryFilter]::Register() -eq 0)
     } catch { $busyRetry = $false }
     $stage = 'app'
@@ -99,6 +144,7 @@ try {
     $stage = 'show'
     $deck.SlideShowSettings.ShowType = 2 # ppShowTypeWindow: works with one or two displays.
     $deck.SlideShowSettings.ShowWithAnimation = -1
+    $windowsBefore = @(Get-PowerPointWindows | ForEach-Object { $_.Handle })
     $show = $deck.SlideShowSettings.Run()
     $stage = 'ready'
     # Wait until the show is running before reading its position.
