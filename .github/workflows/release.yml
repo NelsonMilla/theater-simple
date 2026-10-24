@@ -1,0 +1,73 @@
+# Builds the Windows package on every pull request, and publishes it as a GitHub release
+# when a merge lands on main with a package.json version that has no release tag yet.
+name: Release
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  windows-package:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read the package version
+        id: version
+        run: |
+          $package = Get-Content -LiteralPath package.json -Raw | ConvertFrom-Json
+          $lock = Get-Content -LiteralPath package-lock.json -Raw | ConvertFrom-Json
+          if ($lock.version -ne $package.version) { throw "package-lock.json version $($lock.version) does not match package.json version $($package.version)." }
+          $tag = "v$($package.version)"
+          $existing = git ls-remote --tags origin "refs/tags/$tag"
+          $publish = ('${{ github.event_name }}' -ne 'pull_request') -and [string]::IsNullOrWhiteSpace($existing)
+          "version=$($package.version)" | Add-Content -LiteralPath $env:GITHUB_OUTPUT
+          "tag=$tag" | Add-Content -LiteralPath $env:GITHUB_OUTPUT
+          "publish=$($publish.ToString().ToLowerInvariant())" | Add-Content -LiteralPath $env:GITHUB_OUTPUT
+          "prerelease=$(($package.version -like '*-*').ToString().ToLowerInvariant())" | Add-Content -LiteralPath $env:GITHUB_OUTPUT
+          if (-not $publish -and '${{ github.event_name }}' -ne 'pull_request') { Write-Host "Release $tag already exists; building only." }
+
+      - name: Download pinned runtimes and install dependencies
+        run: ./scripts/setup-windows.ps1
+
+      - name: Run tests with the bundled Node runtime
+        run: |
+          & './runtime/node.exe' --test 'tests/*.test.mjs'
+          if ($LASTEXITCODE -ne 0) { throw 'Tests failed.' }
+
+      - name: Build the Windows package
+        run: ./scripts/build-windows.ps1 -PackageName "Theater Simple Windows ${{ steps.version.outputs.version }}"
+
+      - name: Keep the package as a workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Theater Simple Windows ${{ steps.version.outputs.version }}
+          path: |
+            dist/*.zip
+            dist/*.zip.sha256
+          if-no-files-found: error
+
+      - name: Publish the GitHub release
+        if: steps.version.outputs.publish == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $arguments = @('release', 'create', '${{ steps.version.outputs.tag }}', '--target', '${{ github.sha }}', '--title', 'Theater Simple ${{ steps.version.outputs.version }}', '--generate-notes')
+          if ('${{ steps.version.outputs.prerelease }}' -eq 'true') { $arguments += '--prerelease' }
+          $arguments += Get-ChildItem -LiteralPath dist -File | Where-Object { $_.Name -like '*.zip' -or $_.Name -like '*.zip.sha256' } | ForEach-Object { $_.FullName }
+          & gh @arguments
+          if ($LASTEXITCODE -ne 0) { throw 'Release creation failed.' }

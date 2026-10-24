@@ -27,7 +27,15 @@ const emptyText=()=>({original:'',translation:'',originalFinal:'',translationFin
 let captions={...emptyText(),status:'idle',enabled:config.captionEnabled!==false,error:null};
 const events=new Set();
 const publicFile=f=>({id:f.id,name:f.name,type:f.type,url:`/files/${encodeURIComponent(f.id)}`});
-const state=()=>({app:'theater-simple',captions:{...captions,hasKey:!!apiKey},settings:{targetLanguage:config.targetLanguage,sourceLanguages:config.sourceLanguages},files:config.files.map(publicFile)});
+const byName=(a,b)=>a.name.localeCompare(b.name,'en',{numeric:true,sensitivity:'base'})||a.id.localeCompare(b.id);
+const state=()=>({app:'theater-simple',captions:{...captions,hasKey:!!apiKey},settings:{targetLanguage:config.targetLanguage,sourceLanguages:config.sourceLanguages},files:[...config.files].sort(byName).map(publicFile)});
+function removeFile(file){
+  if(preparing.has(file.id))throw new Error(`${file.name} is still being prepared. Try again in a moment.`);
+  for(const target of [path.join(uploads,file.filename),path.join(prepared,file.id+'.pdf')]){
+    try{fs.rmSync(target);}catch(error){if(error.code!=='ENOENT')throw new Error(`${file.name} is still open. Close it in PowerPoint or stop showing it, then remove it again.`);}
+  }
+  config.files=config.files.filter(f=>f.id!==file.id);save();
+}
 function broadcast(){const value=`event: state\ndata: ${JSON.stringify(state())}\n\n`;for(const response of events)response.write(value);}
 function json(response,value,status=200){response.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'});response.end(JSON.stringify(value));}
 function local(req){const readOnly=['GET','HEAD'].includes(req.method)&&!req.headers.upgrade;return ['127.0.0.1:'+PORT,'localhost:'+PORT].includes(req.headers.host)&&(!req.headers.origin||['http://127.0.0.1:'+PORT,'http://localhost:'+PORT].includes(req.headers.origin))&&(readOnly||req.headers['sec-fetch-site']!=='cross-site');}
@@ -113,6 +121,12 @@ const server=http.createServer(async(req,res)=>{
             child.on('exit',code=>{clearTimeout(timeout);code===0?resolve():reject(new Error('PowerPoint could not open the deck. Check that PowerPoint is installed and activated, or open the file manually.'));});
           });break;
         }
+        case '/api/remove-file':{
+          const file=config.files.find(f=>f.id===data.id);if(!file)throw new Error('Presentation not found. It may already be removed.');
+          removeFile(file);break;
+        }
+        case '/api/clear-files':
+          for(const file of [...config.files].sort(byName))removeFile(file);break;
         default:return json(res,{error:'Unknown action.'},404);
       }
       broadcast();return json(res,{ok:true,state:state()});

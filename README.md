@@ -2,7 +2,7 @@
 
 A small Windows presentation app for a theater projector and hybrid Zoom events. Choose a PDF or PowerPoint once, or enter a website address, and show the content above translated captions. OBS is not required.
 
-**1.3.0-rc.1 is a test release for PowerPoint animations.** Real animated playback still awaits validation on a PC with licensed, activated Microsoft PowerPoint. Use [the 1.3.0-rc.1 prerelease](https://github.com/vmihalis/theater-simple/releases/tag/v1.3.0-rc.1) to test this feature; the latest stable release remains separate. Keep your working installation until the rehearsal succeeds.
+Releases are built and published automatically from the `main` branch; see [Releases](#releases). Animated PowerPoint playback still awaits validation on a PC with licensed, activated Microsoft PowerPoint, so keep your working installation until the rehearsal succeeds.
 
 ## Windows quickstart
 
@@ -10,9 +10,7 @@ A small Windows presentation app for a theater projector and hybrid Zoom events.
 2. Choose **Extract All**. Open **Start Theater.cmd** inside the extracted folder.
 3. Choose a PDF, `.pptx`, or `.ppsx`, or enter a URL and click **Show website**.
 4. Click **Open projector**, move that window to the extended display, then click **Full screen**.
-5. Use **Live presentation** to show content, or **Holding** / **Blackout** between speakers.
-
-For the animation test release, use the prerelease link above instead of the latest stable download.
+5. Use **Live presentation** to show content, or **Holding** / **Blackout** between speakers. **Holding** shows the Mirai Tech City · Summit II holding screen.
 
 Windows 11 x64 is the tested platform. The release includes Node.js, Electron, and browser assets; no developer tools are needed. Internet is needed for websites and live Soniox translation. PDF presentation and caption test text work offline.
 
@@ -21,7 +19,7 @@ Windows 11 x64 is the tested platform. The release includes Node.js, Electron, a
 1. Stop captions, close Theater Simple and its projector, then run **Stop Theater.cmd** in the old folder.
 2. Extract the new ZIP into a **new folder**. Keep the old folder as a backup.
 3. To keep uploaded files and settings, copy the old **data** folder into the new app folder while the app is stopped.
-4. If you customized the holding screen, also copy **public/welcome.jpg** (or your chosen image) and reapply only your custom rules from **public/style.css** to the new stylesheet. Do not replace the new stylesheet with the entire old file. Keep any custom welcome wording you edited in `public/index.html` or `public/stage.html` separately and reapply it too.
+4. If you customized the holding screen, reapply only your changes to the `.holding-screen` markup in `public/index.html` and `public/stage.html` and to its `.holding-*` rules in `public/style.css`. Do not replace the new files with the entire old ones.
 5. Start the new copy with **Start Theater.cmd**, enter your Soniox key again, and rehearse your presentation. Run only one copy at a time.
 
 ## Content
@@ -32,6 +30,8 @@ Windows 11 x64 is the tested platform. The release includes Node.js, Electron, a
 | PowerPoint | Select `.pptx` or `.ppsx` once in the desktop app. Installed, activated **Microsoft PowerPoint** runs the real slideshow with animations and transitions; its picture connects automatically. |
 | Website | Enter its address once. The desktop app opens one website window and automatically captures it. Use **Browse website** to click and scroll there; the projector follows the same page. |
 | Another app or a remote Zoom presenter | Expand **Other windows**, then explicitly choose the presentation window. |
+
+The presentation list is sorted A to Z. **Remove** deletes one presentation's copy from the app's `data` folder, and **Clear list** removes them all after a confirmation; the original files on your PC are untouched. Removing the presentation currently on stage returns the preview and projector to the placeholder.
 
 For PowerPoint, **Next** advances the next animation or slide in that same slideshow. Your clicker (Page Down / Page Up or arrow keys) works when the Theater Simple control panel, projector, or PowerPoint slideshow has focus. **Focus PowerPoint slideshow** brings forward the original slideshow for interactive objects. Keep that window open and unminimized. There is no separate editing window for this read-only copy. A clicker focused in another application still controls that application; there is no global keyboard interception.
 
@@ -98,7 +98,11 @@ After setup:
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-windows.ps1
 ```
 
-The script writes `dist/Theater Simple Windows.zip` and a `.sha256` file. It packages an explicit source/runtime allowlist, including only the `ws` production dependency. It excludes user data, browser profiles, keys, logs, downloads, and uploaded documents. It refuses to overwrite an existing package; use `-PackageName 'Theater Simple Windows 1.3.0-rc.1'` for a new output name.
+The script writes `dist/Theater Simple Windows.zip` and a `.sha256` file. It packages an explicit source/runtime allowlist, including only the `ws` production dependency. It excludes user data, browser profiles, keys, logs, downloads, and uploaded documents. It refuses to overwrite an existing package; use `-PackageName 'Theater Simple Windows 1.4.0'` for a new output name.
+
+## Releases
+
+The [Release workflow](.github/workflows/release.yml) runs on a Windows GitHub runner. On every pull request it downloads the pinned runtimes, runs the tests, builds the Windows ZIP, and keeps it as a workflow artifact. When a merge lands on `main`, it also publishes a GitHub release tagged `v<version>` from `package.json`, with the ZIP and its `.sha256` attached, unless that tag already exists. To ship a release, bump `version` in `package.json` and `package-lock.json` in the pull request; a version containing a hyphen, such as `1.5.0-rc.1`, is published as a prerelease.
 
 ## Files and stopping
 

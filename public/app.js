@@ -110,6 +110,8 @@ function renderFiles(files) {
   const signature = JSON.stringify(files);
   if (signature === fileSignature) return;
   fileSignature = signature;
+  $('file-list-tools').hidden = !files.length;
+  $('file-list-summary').textContent = `${files.length} ${files.length === 1 ? 'presentation' : 'presentations'}, A to Z`;
   $('file-list').replaceChildren();
   if (!files.length) { const empty = document.createElement('p'); empty.className = 'empty'; empty.textContent = 'Your files will appear here.'; $('file-list').append(empty); }
   files.forEach(file => {
@@ -118,8 +120,23 @@ function renderFiles(files) {
     const name = document.createElement('span'); name.className = 'file-name'; name.textContent = file.name;
     const button = document.createElement('button'); button.className = 'button secondary'; button.textContent = 'Show'; button.setAttribute('aria-label', `Show ${file.name}`);
     button.addEventListener('click', () => showFile(file));
-    row.append(icon, name, button); $('file-list').append(row);
+    const remove = document.createElement('button'); remove.className = 'button quiet small'; remove.textContent = 'Remove'; remove.setAttribute('aria-label', `Remove ${file.name} from the list`);
+    remove.addEventListener('click', () => withButton(remove, () => removeFile(file)));
+    row.append(icon, name, button, remove); $('file-list').append(row);
   });
+}
+async function removeFile(file) {
+  const result = await api('/api/remove-file', { id: file.id });
+  forgetShown([file.id]);
+  renderState(result.state);
+  notice(`${file.name} was removed from the list.`);
+}
+// A removed presentation must leave the preview and projector as well.
+function forgetShown(ids) {
+  if (!pdf || !ids.includes(pdf.id)) return;
+  contentGeneration++; pdf = null; pdfReady = false; pdfPageCount = 0;
+  $('pdf-page-status').textContent = '';
+  publish(); updateButtons();
 }
 function renderState(next) {
   if (!next || next.app !== 'theater-simple') throw new Error('This is not the Theater Simple server.');
@@ -300,6 +317,15 @@ document.querySelector('.help-link').addEventListener('click', event => {
   $('website-form').requestSubmit();
 });
 $('upload-button').addEventListener('click', () => $('upload-input').click());
+$('clear-files').addEventListener('click', () => withButton($('clear-files'), async () => {
+  const files = state?.files || [];
+  if (!files.length) return;
+  if (!confirm(`Remove all ${files.length} presentations from the list?\n\nTheir copies in the app's data folder are deleted. Your original files stay where they are.`)) return;
+  const result = await api('/api/clear-files', {});
+  forgetShown(files.map(file => file.id));
+  renderState(result.state);
+  notice('The presentation list was cleared.');
+}));
 $('upload-input').addEventListener('change', async () => {
   const files = Array.from($('upload-input').files || []);
   if (!files.length) return;
