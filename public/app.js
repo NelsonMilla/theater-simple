@@ -141,6 +141,7 @@ function forgetShown(ids) {
 function renderState(next) {
   if (!next || next.app !== 'theater-simple') throw new Error('This is not the Theater Simple server.');
   state = next;
+  $('app-version').textContent = state.version ? `THEATER SIMPLE ${state.version}` : 'THEATER SIMPLE';
   renderFiles(state.files || []);
   $('caption-original').textContent = state.captions?.original || 'Speech will appear here.';
   $('caption-translation').textContent = state.captions?.translation || 'Translation will appear here.';

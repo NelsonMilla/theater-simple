@@ -9,6 +9,7 @@ import {attachSoniox} from './lib/soniox.mjs';
 import {preparePowerPoint} from './lib/powerpoint.mjs';
 
 const root=path.dirname(fileURLToPath(import.meta.url));
+const APP_VERSION=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8')).version;
 const PORT=Number(process.env.THEATER_PORT||43120);
 if(!Number.isInteger(PORT)||PORT<1024||PORT>65535)throw new Error('Invalid local port.');
 const dataRoot=path.resolve(process.env.THEATER_DATA_DIR||path.join(root,'data'));
@@ -28,7 +29,7 @@ let captions={...emptyText(),status:'idle',enabled:config.captionEnabled!==false
 const events=new Set();
 const publicFile=f=>({id:f.id,name:f.name,type:f.type,url:`/files/${encodeURIComponent(f.id)}`});
 const byName=(a,b)=>a.name.localeCompare(b.name,'en',{numeric:true,sensitivity:'base'})||a.id.localeCompare(b.id);
-const state=()=>({app:'theater-simple',captions:{...captions,hasKey:!!apiKey},settings:{targetLanguage:config.targetLanguage,sourceLanguages:config.sourceLanguages},files:[...config.files].sort(byName).map(publicFile)});
+const state=()=>({app:'theater-simple',version:APP_VERSION,captions:{...captions,hasKey:!!apiKey},settings:{targetLanguage:config.targetLanguage,sourceLanguages:config.sourceLanguages},files:[...config.files].sort(byName).map(publicFile)});
 function removeFile(file){
   if(preparing.has(file.id))throw new Error(`${file.name} is still being prepared. Try again in a moment.`);
   for(const target of [path.join(uploads,file.filename),path.join(prepared,file.id+'.pdf')]){
