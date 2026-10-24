@@ -6,7 +6,7 @@ Releases are built and published automatically from the `main` branch; see [Rele
 
 ## Windows quickstart
 
-1. Download the Windows ZIP from [the latest release](https://github.com/vmihalis/theater-simple/releases/latest).
+1. Download the Windows ZIP from [the latest release](https://github.com/NelsonMilla/theater-simple/releases/latest).
 2. Choose **Extract All**. Open **Start Theater.cmd** inside the extracted folder.
 3. Choose a PDF, `.pptx`, or `.ppsx`, or enter a URL and click **Show website**.
 4. Click **Open projector**, move that window to the extended display, then click **Full screen**.
@@ -16,7 +16,7 @@ Windows 11 x64 is the tested platform. The release includes Node.js, Electron, a
 
 ### Updating an existing installation
 
-1. Stop captions, close Theater Simple and its projector, then run **Stop Theater.cmd** in the old folder.
+1. Stop captions, close Theater Simple and its projector, then run **Stop Theater.cmd** in the old folder. If you forget, **Start Theater.cmd** in the new folder closes the old copy's server and desktop window before starting. The version appears at the bottom left of the control panel.
 2. Extract the new ZIP into a **new folder**. Keep the old folder as a backup.
 3. To keep uploaded files and settings, copy the old **data** folder into the new app folder while the app is stopped.
 4. If you customized the holding screen, reapply only your changes to the `.holding-screen` markup in `public/index.html` and `public/stage.html` and to its `.holding-*` rules in `public/style.css`. Do not replace the new files with the entire old ones.
@@ -98,7 +98,7 @@ After setup:
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-windows.ps1
 ```
 
-The script writes `dist/Theater Simple Windows.zip` and a `.sha256` file. It packages an explicit source/runtime allowlist, including only the `ws` production dependency. It excludes user data, browser profiles, keys, logs, downloads, and uploaded documents. It refuses to overwrite an existing package; use `-PackageName 'Theater Simple Windows 1.4.0'` for a new output name.
+The script writes `dist/Theater Simple Windows.zip` and a `.sha256` file. It packages an explicit source/runtime allowlist, including only the `ws` production dependency. It excludes user data, browser profiles, keys, logs, downloads, and uploaded documents. It refuses to overwrite an existing package; use `-PackageName 'Theater Simple Windows 1.4.1'` for a new output name.
 
 ## Releases
 

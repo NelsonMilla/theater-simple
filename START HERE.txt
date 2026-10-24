@@ -1,17 +1,18 @@
 THEATER SIMPLE - WITHOUT OBS
 
-VERSION 1.3.0-rc.1 - POWERPOINT ANIMATION TEST RELEASE
-Real animated playback still needs validation on a PC with licensed,
+VERSION 1.4.1 - MIRAI TECH CITY SUMMIT II
+The version is shown at the bottom left of the control panel.
+Animated PowerPoint playback still needs validation on a PC with licensed,
 activated Microsoft PowerPoint. Keep your working installation until the
-rehearsal below succeeds. This prerelease does not replace the stable release.
+rehearsal below succeeds.
 
 OPEN THE APP
 Double-click Start Theater.cmd. It starts the local service and opens the
 Theater Simple desktop app. Keep its control window open during the show.
 
 ON ANOTHER WINDOWS PC
-1. Download the Windows ZIP for this animation test from:
-   https://github.com/vmihalis/theater-simple/releases/tag/v1.3.0-rc.1
+1. Download the Windows ZIP from the latest release:
+   https://github.com/NelsonMilla/theater-simple/releases/latest
    Copy it to a 64-bit Intel/AMD Windows 11 PC.
 2. Right-click the ZIP > Extract All. Put the extracted folder in Documents.
 3. Double-click Start Theater.cmd in that folder.
@@ -23,15 +24,15 @@ ON ANOTHER WINDOWS PC
 
 UPDATING AN EXISTING INSTALLATION
 1. Stop captions, close the app and projector, then run Stop Theater.cmd
-   in the old app folder.
+   in the old app folder. If you forget, Start Theater.cmd in the new
+   folder closes the old copy before starting.
 2. Extract the new ZIP into a new folder. Keep the old folder as a backup.
 3. Copy the old data folder into the new app folder to keep uploaded files,
    settings, and the app's website session. Keep the app stopped while copying.
-4. If you changed the welcome picture, copy public/welcome.jpg (or your
-   chosen image). Reapply only your custom rules from public/style.css to
-   the new stylesheet; do not replace the whole new stylesheet with the old
-   file. Reapply any welcome wording you edited in public/index.html or
-   public/stage.html too.
+4. If you customized the holding screen, reapply only your changes to the
+   holding-screen markup in public/index.html and public/stage.html and to
+   its holding rules in public/style.css. Do not replace the new files
+   with the old ones.
 5. Open Start Theater.cmd from the new folder and enter your Soniox key
    again. Rehearse before the event. Run only one app copy at a time.
 

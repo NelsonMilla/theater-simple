@@ -53,6 +53,29 @@ jobs:
       - name: Build the Windows package
         run: ./scripts/build-windows.ps1 -PackageName "Theater Simple Windows ${{ steps.version.outputs.version }}"
 
+      - name: Check the launcher replaces a copy running from another folder
+        run: |
+          $package = (Get-Item -LiteralPath "dist/Theater Simple Windows ${{ steps.version.outputs.version }}").FullName
+          $other = Join-Path $env:RUNNER_TEMP 'other-copy'
+          Copy-Item -LiteralPath $package -Destination $other -Recurse
+          $ownerOf43120 = { $listener = Get-NetTCPConnection -LocalPort 43120 -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1; if ($listener) { (Get-CimInstance Win32_Process -Filter "ProcessId = $($listener.OwningProcess)").CommandLine } }
+          $oldServer = Start-Process -FilePath (Join-Path $other 'runtime\node.exe') -ArgumentList @('"' + (Join-Path $other 'server.mjs') + '"') -WorkingDirectory $other -WindowStyle Hidden -PassThru
+          for ($attempt = 0; $attempt -lt 40 -and -not (& $ownerOf43120); $attempt++) { Start-Sleep -Milliseconds 250 }
+          if (-not ((& $ownerOf43120) -like "*$other*")) { throw 'The other copy did not start.' }
+          foreach ($run in 1, 2) {
+            & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $package 'Start Theater.ps1') -NoBrowser
+            if ($LASTEXITCODE -ne 0) { throw "Start Theater.ps1 failed on run $run." }
+            $commandLine = & $ownerOf43120
+            if (-not ($commandLine -like "*$(Join-Path $package 'server.mjs')*")) { throw "Run ${run}: port 43120 is served by: $commandLine" }
+          }
+          if (-not $oldServer.HasExited) { throw 'The other copy is still running.' }
+          $state = Invoke-RestMethod -Uri 'http://127.0.0.1:43120/api/state'
+          if ($state.version -ne '${{ steps.version.outputs.version }}') { throw "Unexpected version $($state.version)." }
+          & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $package 'Stop Theater.ps1')
+          for ($attempt = 0; $attempt -lt 20 -and (& $ownerOf43120); $attempt++) { Start-Sleep -Milliseconds 250 }
+          if (& $ownerOf43120) { throw 'Stop Theater.ps1 did not stop the server.' }
+          Write-Host "Launcher replaced the other copy and reused its own server; version $($state.version)."
+
       - name: Keep the package as a workflow artifact
         uses: actions/upload-artifact@v5
         with:

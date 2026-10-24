@@ -163,6 +163,8 @@ describe('isolated Theater Simple HTTP integration', {concurrency: false}, () =>
     assert.equal(response.status, 200);
     const state = await response.json();
     assert.equal(state.app, 'theater-simple');
+    const packageVersion = JSON.parse(await fs.readFile(path.join(root, 'package.json'), 'utf8')).version;
+    assert.equal(state.version, packageVersion, 'The launcher compares this to detect an older running copy');
     assert.equal(state.captions.hasKey, false);
     assert.deepEqual(state.files, []);
     assert.equal('obs' in state, false);
