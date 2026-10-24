@@ -44,6 +44,12 @@ PowerPoint must be installed and activated on each presentation PC; it is not in
 3. Click **Open projector**. Repeat the test using Page Down or your clicker with the control panel, projector, and PowerPoint slideshow focused in turn. Each output should follow the same slideshow.
 4. Under **Soniox key & caption test**, use **Show test** and check that the test caption appears below the animated presentation. Then rehearse your own deck, Zoom share, and audio.
 
+If a slideshow fails to start, the message ends with **Details:** naming the step and PowerPoint's own error code; include that line when reporting a problem. To test PowerPoint on the event PC directly, run this from the app folder:
+
+```powershell
+& '.\runtime\node.exe' tests\powerpoint-live.windows.mjs tests\fixtures\animation-rehearsal.pptx
+```
+
 Save older `.ppt` / `.pps` files as `.pptx` or PDF first. Decks linking to external media or data must be made self-contained or exported to PDF. Macros and ActiveX controls are not supported. Embedded video picture can play through PowerPoint, but audio is not included in Theater Simple's picture capture; route and test presentation audio separately. Browser-only mode retains the static PowerPoint conversion and does not play animations.
 
 The website window has its own browser session. Existing Edge logins are not imported. Some pop-up login flows, DRM, or other browser features may need the ordinary browser plus manual window capture. Automatic website capture works in the desktop app, not in a normal browser tab. Picture capture does not carry website or presentation audio.
@@ -98,7 +104,7 @@ After setup:
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-windows.ps1
 ```
 
-The script writes `dist/Theater Simple Windows.zip` and a `.sha256` file. It packages an explicit source/runtime allowlist, including only the `ws` production dependency. It excludes user data, browser profiles, keys, logs, downloads, and uploaded documents. It refuses to overwrite an existing package; use `-PackageName 'Theater Simple Windows 1.4.1'` for a new output name.
+The script writes `dist/Theater Simple Windows.zip` and a `.sha256` file. It packages an explicit source/runtime allowlist, including only the `ws` production dependency. It excludes user data, browser profiles, keys, logs, downloads, and uploaded documents. It refuses to overwrite an existing package; use `-PackageName 'Theater Simple Windows 1.4.2'` for a new output name.
 
 ## Releases
 
