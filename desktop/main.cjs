@@ -3,9 +3,6 @@ const { app, BrowserWindow, desktopCapturer, dialog, ipcMain, session } = requir
 const path = require('node:path');
 const fs = require('node:fs');
 const { pathToFileURL } = require('node:url');
-const { PowerPointShow, findSlideshowSource } = require('./powerpoint.cjs');
-const { setTimeout: delay } = require('node:timers/promises');
-const { randomUUID } = require('node:crypto');
 
 const base = new URL(process.env.THEATER_DESKTOP_URL || `http://127.0.0.1:${process.env.THEATER_PORT || '43120'}/`);
 if (base.protocol !== 'http:' || base.hostname !== '127.0.0.1' || base.username || base.password || !base.port) throw new Error('Theater desktop requires a loopback HTTP service with an explicit port.');
@@ -22,9 +19,6 @@ let websiteGeneration = 0;
 let pendingWebsite = null;
 let picker = null;
 let quitting = false;
-let powerpoint = null;
-let pendingPowerPoint = null;
-let powerPointError = '';
 const projectors = new Set();
 const pickerURL = pathToFileURL(path.join(__dirname, 'source-picker.html')).href;
 
@@ -60,13 +54,6 @@ function clearPendingWebsite() {
   pendingWebsite = null;
 }
 function rejectPicker() { if (picker) picker.finish(null); }
-async function closePowerPoint(token) {
-  if (token !== undefined && token !== powerpoint?.token) return;
-  const old = powerpoint; powerpoint = null;
-  if (pendingPowerPoint) clearTimeout(pendingPowerPoint.timer);
-  pendingPowerPoint = null;
-  await old?.close();
-}
 function closeWebsite() {
   ++websiteGeneration;
   clearPendingWebsite();
@@ -118,26 +105,6 @@ function configureControlSession(ses) {
     const checks = { controlAlive: !!control && !control.isDestroyed(), framePresent: !!request.frame, mainFrameMatches: !!control && !control.isDestroyed() && request.frame === control.webContents.mainFrame, originMatches: isLocalOrigin(request.securityOrigin), videoRequested: request.videoRequested === true, audioRequested: request.audioRequested === true, pendingWebsite: !!pendingWebsite };
     captureDiagnostic('request', checks);
     if (!checks.controlAlive || !checks.framePresent || !checks.mainFrameMatches || !checks.originMatches || !checks.videoRequested || checks.audioRequested) { captureDiagnostic('denied', { reason: 'request-scope' }); callback(null); return; }
-    if (pendingPowerPoint) {
-      const selected = pendingPowerPoint; pendingPowerPoint = null; clearTimeout(selected.timer);
-      try {
-        const info = await selected.ready;
-        let source;
-        for (let attempt = 0; attempt < 30; attempt++) {
-          if (powerpoint !== selected.show || selected.show.closed || !control || control.isDestroyed() || request.frame !== control.webContents.mainFrame) throw new Error('Presentation opening cancelled.');
-          source = findSlideshowSource(await desktopCapturer.getSources({ types: ['window'], thumbnailSize: { width: 0, height: 0 } }), info.hwnd);
-          if (source) break;
-          await delay(100);
-        }
-        if (!source) throw new Error('The PowerPoint slideshow window could not be captured. Keep it open and unminimized, then try again.');
-        callback({ video: source });
-        if (control && !control.isDestroyed()) { control.show(); control.focus(); }
-      } catch (error) {
-        if (powerpoint === selected.show) { powerPointError = error.message; await closePowerPoint(selected.show.token); }
-        try { callback(null); } catch {}
-      }
-      return;
-    }
     const selected = pendingWebsite;
     if (!selected) { await chooseDesktopSource(request, callback); return; }
     clearPendingWebsite();
@@ -152,28 +119,9 @@ function configureControlSession(ses) {
 }
 
 function registerIPC(remoteSession) {
-  ipcMain.handle('theater:open-powerpoint', (event, id) => {
-    requireControl(event);
-    if (typeof id !== 'string' || !/^[a-zA-Z0-9-]{1,80}$/.test(id)) throw new Error('Choose a saved PowerPoint file.');
-    rejectPicker(); closeWebsite();
-    const previous = closePowerPoint();
-    powerPointError = '';
-    const show = new PowerPointShow({ origin, directory: path.join(profilePath, 'slideshows') });
-    show.token = randomUUID();
-    powerpoint = show;
-    const ready = previous.then(() => show.start(id));
-    ready.catch(error => { if (powerpoint === show) powerPointError = error.message; });
-    const timer = setTimeout(() => { if (pendingPowerPoint?.show === show) closePowerPoint().catch(() => {}); }, 10000);
-    pendingPowerPoint = { show, ready, timer };
-    return { token: show.token };
-  });
-  ipcMain.handle('theater:powerpoint-command', (event, action) => { requireControl(event); if (!powerpoint) throw new Error('Choose a PowerPoint file first.'); return powerpoint.command(action); });
-  ipcMain.handle('theater:powerpoint-error', event => { requireControl(event); return powerPointError; });
-  ipcMain.handle('theater:close-powerpoint', (event, token) => { requireControl(event); if (token !== undefined && typeof token !== 'string') throw new Error('Invalid slideshow session.'); return closePowerPoint(token); });
   ipcMain.handle('theater:open-website', (event, rawURL) => {
     requireControl(event);
     const url = parseWebsite(rawURL);
-    closePowerPoint().catch(() => {});
     rejectPicker();
     closeWebsite();
     const generation = websiteGeneration;
@@ -245,7 +193,7 @@ async function createControl() {
 if (!app.requestSingleInstanceLock({ origin })) app.quit();
 else {
   app.on('second-instance', () => { if (control && !control.isDestroyed()) { if (control.isMinimized()) control.restore(); control.show(); control.focus(); } });
-  app.on('before-quit', event => { if (quitting) return; event.preventDefault(); quitting = true; rejectPicker(); closeWebsite(); for (const win of projectors) if (!win.isDestroyed()) win.destroy(); closePowerPoint().finally(() => app.quit()); });
+  app.on('before-quit', event => { if (quitting) return; event.preventDefault(); quitting = true; rejectPicker(); closeWebsite(); for (const win of projectors) if (!win.isDestroyed()) win.destroy(); app.quit(); });
   app.on('window-all-closed', () => app.quit());
   app.whenReady().then(createControl).catch(error => { dialog.showErrorBox('Theater Simple', error.message); app.quit(); });
 }

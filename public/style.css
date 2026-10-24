@@ -14,3 +14,9 @@
 .holding-title strong{display:block;font-size:calc(var(--u)*8.4);letter-spacing:.015em;transform:scaleX(1.06);transform-origin:left}
 .holding-title span{color:var(--holding-sky);font-size:calc(var(--u)*2.6);letter-spacing:.005em}
 .holding-footer{position:absolute;left:0;right:0;bottom:0;height:calc(var(--u)*3.3);background:var(--holding-red);display:flex;align-items:center;padding:0 calc(var(--u)*5);font-family:var(--holding-mono);font-weight:600;font-size:calc(var(--u)*1.1);letter-spacing:.24em;white-space:nowrap;overflow:hidden}
+
+/* In-browser PowerPoint player (public/vendor/pptx): letterboxed on black, no viewer chrome. */
+.deck-area{position:absolute;inset:0;background:#000;overflow:hidden}.deck-area.is-hidden{visibility:hidden}
+.deck-player-host{position:absolute;inset:0}.deck-player-shield{position:absolute;inset:0;z-index:20}
+.deck-area .pptxv,.deck-area .pptxv-viewport{background:#000!important}
+.deck-area .pptxv-presentation-touch-controls,.deck-area .pptxv-presentation-toolbar,.deck-area .pptxv-presentation-toolbar-host{display:none!important}

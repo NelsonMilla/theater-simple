@@ -181,6 +181,27 @@ describe('isolated Theater Simple HTTP integration', {concurrency: false}, () =>
     }
   });
 
+  it('serves the bundled PowerPoint player, its fonts and license notices, with no remote fonts allowed', async () => {
+    const player = await request('/vendor/pptx/deck-player.js');
+    assert.equal(player.status, 200, 'Run npm run vendor:pptx (or scripts/setup-windows.ps1) first');
+    assert.match(player.headers['content-type'], /^text\/javascript(?:;|$)/);
+    assert.equal((await request('/vendor/pptx/deck-player.css')).status, 200);
+    const assets = await fs.readdir(path.join(root, 'public', 'vendor', 'pptx', 'assets'));
+    const font = assets.find(file => file.startsWith('carlito-latin-400-normal') && file.endsWith('.woff2'));
+    assert.ok(font, 'Carlito is bundled for offline use');
+    const served = await request(`/vendor/pptx/assets/${font}`);
+    assert.equal(served.status, 200);
+    assert.equal(served.headers['content-type'], 'font/woff2');
+    const notices = await request('/vendor/pptx/THIRD-PARTY-NOTICES.txt');
+    assert.match(notices.headers['content-type'], /^text\/plain/);
+    for (const name of ['pptx-vanilla-viewer', '@fontsource/carlito', 'ooxml-core']) assert.match(notices.body.toString(), new RegExp(`^${name.replace('/', '\\/')} `, 'm'));
+    for (const page of ['/', '/stage']) {
+      const policy = (await request(page)).headers['content-security-policy'];
+      assert.match(policy, /style-src 'self' 'unsafe-inline' blob: data:/, `${page} keeps styles local`);
+      assert.match(policy, /font-src 'self' blob: data:/, `${page} keeps fonts local, so no Google Fonts`);
+    }
+  });
+
   it('accepts PDF, PPT, PPTX, PPS and PPSX and publishes only safe file metadata', async () => {
     const fixtures = [
       ['Japanese rehearsal.pdf', pdf],

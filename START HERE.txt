@@ -1,10 +1,10 @@
 THEATER SIMPLE - WITHOUT OBS
 
-VERSION 1.4.4 - MIRAI TECH CITY SUMMIT II
+VERSION 1.5.0 - MIRAI TECH CITY SUMMIT II
 The version is shown at the bottom left of the control panel.
-Animated PowerPoint playback still needs validation on a PC with licensed,
-activated Microsoft PowerPoint. Keep your working installation until the
-rehearsal below succeeds.
+PowerPoint decks (.pptx, .ppsx) now play inside Theater Simple with their
+animations. Microsoft PowerPoint is no longer needed for them. Rehearse your
+own decks before the event.
 
 OPEN THE APP
 Double-click Start Theater.cmd. It starts the local service and opens the
@@ -18,9 +18,8 @@ ON ANOTHER WINDOWS PC
 3. Double-click Start Theater.cmd in that folder.
    The desktop app and its runtime are included. OBS, Codex, npm, and a
    separate Node installation are not needed.
-4. Install and activate Microsoft PowerPoint on that PC if you want to
-   select PowerPoint files directly. PDF files do not need PowerPoint.
-   Open PowerPoint once and finish Office setup before your rehearsal.
+4. Microsoft PowerPoint is optional. It is only used to make a static PDF
+   copy of older .ppt/.pps files, or of a deck that cannot play here.
 
 UPDATING AN EXISTING INSTALLATION
 1. Stop captions, close the app and projector, then run Stop Theater.cmd
@@ -39,18 +38,21 @@ UPDATING AN EXISTING INSTALLATION
 CHOOSE YOUR CONTENT ONCE
 - PDF: Click Choose file and select the PDF. It appears directly with captions.
   Use Previous and Next below the preview to change pages. No window picker.
-- PowerPoint: Click Choose file and select a .pptx or .ppsx file. Wait briefly
-  while PowerPoint opens the real slideshow. It appears with captions,
-  using the same Previous and Next controls. No second selection or window picker.
-  Animations and transitions play. Next advances the next animation or slide.
-  Use your clicker with Theater Simple, its projector, or the slideshow focused.
-  Focus PowerPoint slideshow brings forward the same slideshow. Clicking
-  another application gives that application control of the clicker.
-  Keep the slideshow open and unminimized. Picture capture does not include audio.
-  The app uses a private read-only copy and does not edit your original file.
-  You can rehearse with one monitor; a second screen is not required to test.
-  For older .ppt/.pps files, save a .pptx or PDF copy in PowerPoint first.
-  If a deck links to external media or data, embed those items or export a PDF.
+- PowerPoint: Click Choose file and select a .pptx or .ppsx file. It plays
+  directly with captions, using the same Previous and Next controls, in the
+  desktop app or a browser. No window picker, and PowerPoint is not needed.
+  Animations and transitions play. Next plays the next animation, then moves
+  to the next slide. Previous returns to the previous slide, fully built.
+  Use your clicker with the Theater Simple control panel or projector focused.
+  Clicking another application gives that application control of the clicker.
+  Office fonts on the PC are used; the bundled Carlito font replaces a missing
+  Calibri or Aptos. Rendering is close to PowerPoint but not identical, so
+  rehearse your own decks. Embedded video and audio play from the projector
+  only; route and test that sound before the event.
+  Your original file is never edited. One monitor is enough to rehearse.
+  Older .ppt/.pps files are shown as a static PDF copy made by PowerPoint;
+  save them as .pptx to keep their animations. If a deck links to external
+  media or data, embed those items or export a PDF.
 - Website: Enter its address and click Show website. The desktop app opens
   the site in its own window and connects its picture automatically.
   Click Browse website to bring it forward. Scroll, click, and navigate there
@@ -72,9 +74,9 @@ the projector follows. Keep it open and unminimized. Do not capture this
 control window or the projector, which would create a repeating picture.
 
 You can also open http://127.0.0.1:43120/ in Edge or Chrome while the service
-is running. Direct PDFs and static PowerPoint slides still work. Automatic
-animated PowerPoint and website capture requires the Theater Simple desktop
-app launched by Start Theater.cmd.
+is running. PDFs and animated PowerPoint decks work there too. Automatic
+website capture requires the Theater Simple desktop app launched by
+Start Theater.cmd.
 In a normal browser, a website needs a separate browser window and manual
 Choose window selection. Use that fallback if a site needs an existing login,
 pop-up login flow, or browser features unavailable in the desktop app.
@@ -123,15 +125,14 @@ Theater.cmd. Closing the desktop app alone leaves the local service running.
 Use one extracted copy per PC at a time.
 
 TEST CONTENT
-On the PC with activated PowerPoint:
 1. Click Choose file and select tests/fixtures/animation-rehearsal.pptx
    inside this app folder.
-2. Click Next once: the first animated line should appear on slide 1.
+2. Click Next once: the first line should fade in on slide 1.
    Click Next again: the second line should appear on slide 1.
    Click Next a third time: the presentation should move to slide 2.
 3. Click Open projector. Repeat using Page Down or your clicker with the
-   app control panel, projector, and PowerPoint slideshow focused in turn.
-   All views should follow the same slideshow.
+   app control panel and the projector focused in turn. Both should show
+   the same step.
 4. Under Soniox key & caption test, click Show test. Check that the caption
    appears below the animated picture.
 
@@ -146,4 +147,6 @@ Node source: https://github.com/nodejs/node/tree/v24.19.0
 Electron: see runtime/electron/LICENSE and LICENSES.chromium.html.
 ws 8.22.0: MIT, see node_modules/ws/LICENSE.
 PDF.js 6.4.299: Apache-2.0, see licenses/PDFJS-LICENSE.txt and PDFJS-NOTICE.txt.
+PowerPoint player (pptx-vanilla-viewer 3.50.1, Apache-2.0), Carlito font
+(SIL OFL 1.1) and their libraries: see public/vendor/pptx/THIRD-PARTY-NOTICES.txt.
 Zoom, Soniox and PowerPoint are separate products and services, not bundled.
