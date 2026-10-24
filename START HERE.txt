@@ -1,6 +1,6 @@
 THEATER SIMPLE - WITHOUT OBS
 
-VERSION 1.4.3 - MIRAI TECH CITY SUMMIT II
+VERSION 1.4.4 - MIRAI TECH CITY SUMMIT II
 The version is shown at the bottom left of the control panel.
 Animated PowerPoint playback still needs validation on a PC with licensed,
 activated Microsoft PowerPoint. Keep your working installation until the
