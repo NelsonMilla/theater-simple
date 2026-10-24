@@ -126,14 +126,16 @@ try {
         }
     }
 } catch {
+    # Inside switch, $_ is the value being switched on, so keep the caught error first.
+    $failure = $_
     $message = switch ($stage) {
-        'validate' { $_.Exception.Message }
+        'validate' { $failure.Exception.Message }
         'prepare' { 'Theater Simple could not prepare PowerPoint automation on this PC.' }
         'app' { 'Theater Simple could not start Microsoft PowerPoint. Open PowerPoint once, finish any activation or sign-in prompt, close it, then choose the file again.' }
         'open' { 'PowerPoint could not open this presentation. Open it in PowerPoint, resolve any password, repair or protected-view prompt, save it as .pptx, then choose it again.' }
         default { 'PowerPoint opened the presentation but could not start or control the slideshow. Close other PowerPoint slideshows and dialogs, then choose the file again.' }
     }
-    if ($stage -ne 'validate') { $message += ' Details: ' + (Describe $_) }
+    if ($stage -ne 'validate') { $message += ' Details: ' + (Describe $failure) }
     Reply @{id=0; error=$message}
 } finally {
     if ($null -ne $show) { try { $show.View.Exit() } catch {} }

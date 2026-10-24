@@ -40,6 +40,7 @@ test('slideshow worker names the failing step and COM code when PowerPoint is mi
 test('slideshow worker passes validation messages through unchanged', {skip: !windows && 'Windows only'}, async t => {
   const reply = await runWorker(t, 'Presentation.pptx', 'not a zip package');
   assert.equal(reply.id, 0);
-  assert.doesNotMatch(reply.error, /Details: step/);
+  assert.equal(typeof reply.error, 'string', 'The validation message must reach the control panel');
   assert.ok(reply.error.length > 0);
+  assert.doesNotMatch(reply.error, /Details: step/);
 });
