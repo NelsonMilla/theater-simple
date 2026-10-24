@@ -10,6 +10,7 @@ $restoreSettings = $false
 $busyRetry = $false
 $nativeHelpers = $false
 $windowsBefore = @()
+$windowsBeforeSummary = 'not read'
 $stage = 'validate'
 function Reply($value) { [Console]::WriteLine(($value | ConvertTo-Json -Compress)); [Console]::Out.Flush() }
 
@@ -88,18 +89,36 @@ function Get-PowerPointWindows {
         [pscustomobject]@{ Handle = [int64]$parts[0]; Class = $parts[1]; Visible = ($parts[2] -eq '1') }
     })
 }
+# Window classes with counts, for example "screenClass, PPTFrameClass x2". No titles.
+function Summarize($windows) {
+    $groups = @($windows | Group-Object Class | Sort-Object Name | ForEach-Object { if ($_.Count -gt 1) { '{0} x{1}' -f $_.Name, $_.Count } else { $_.Name } })
+    if ($groups.Count -eq 0) { return 'none' }
+    return ($groups -join ', ')
+}
 function Get-SlideshowWindowHandle {
     $handle = $null
     # HWND is hidden in PowerPoint's type library, so PowerShell does not list it, and its
     # dispatch number differs between versions. Ask PowerPoint for it by name instead.
     try { $handle = $show.GetType().InvokeMember('HWND', [Reflection.BindingFlags]::GetProperty, $null, $show, $null) } catch {}
     if (-not $handle) {
-        # Otherwise take the visible PowerPoint window that appeared when this show started.
-        $new = @(Get-PowerPointWindows | Where-Object { $_.Visible -and ($windowsBefore -notcontains $_.Handle) })
-        $preferred = @($new | Where-Object { $_.Class -eq 'screenClass' })
-        if ($preferred.Count -gt 0) { $new = $preferred }
-        if ($new.Count -eq 0) { throw 'PowerPoint did not report its slideshow window.' }
-        $handle = $new[0].Handle
+        # Otherwise take the PowerPoint window that became visible when this show started.
+        # PowerPoint can create the slideshow window hidden in advance, so compare visibility,
+        # not only which windows are new.
+        $windows = @(Get-PowerPointWindows)
+        $visible = @($windows | Where-Object { $_.Visible })
+        $shown = @($visible | Where-Object { $windowsBefore -notcontains $_.Handle })
+        $preferred = @($shown | Where-Object { $_.Class -eq 'screenClass' })
+        if ($preferred.Count -gt 0) { $shown = $preferred }
+        if ($shown.Count -eq 0) {
+            # A single visible slideshow-class window can only be this show.
+            $screens = @($visible | Where-Object { $_.Class -eq 'screenClass' })
+            if ($screens.Count -eq 1) { $shown = $screens }
+        }
+        if ($shown.Count -eq 0) {
+            $processes = @(Get-Process -Name POWERPNT -ErrorAction SilentlyContinue).Count
+            throw ('PowerPoint did not report its slideshow window. PowerPoint processes: {0}; visible windows before: {1}; visible now: {2}; hidden now: {3}.' -f $processes, $windowsBeforeSummary, (Summarize $visible), @($windows | Where-Object { -not $_.Visible }).Count)
+        }
+        $handle = $shown[0].Handle
     }
     return ([uint64]([int64]$handle -band 0xffffffff)).ToString()
 }
@@ -108,7 +127,7 @@ function Describe($record) {
     $exception = $record.Exception
     while ($exception.InnerException -and -not ($exception -is [Runtime.InteropServices.COMException])) { $exception = $exception.InnerException }
     $text = ($exception.Message -replace '\s+', ' ').Trim()
-    if ($text.Length -gt 240) { $text = $text.Substring(0, 240) + '...' }
+    if ($text.Length -gt 700) { $text = $text.Substring(0, 700) + '...' }
     $detail = 'step {0}, code 0x{1:X8}: {2}' -f $stage, $exception.HResult, $text
     if (-not $busyRetry) { $detail += ' (busy-retry off)' }
     return $detail
@@ -144,7 +163,9 @@ try {
     $stage = 'show'
     $deck.SlideShowSettings.ShowType = 2 # ppShowTypeWindow: works with one or two displays.
     $deck.SlideShowSettings.ShowWithAnimation = -1
-    $windowsBefore = @(Get-PowerPointWindows | ForEach-Object { $_.Handle })
+    $visibleBefore = @(Get-PowerPointWindows | Where-Object { $_.Visible })
+    $windowsBefore = @($visibleBefore | ForEach-Object { $_.Handle })
+    $windowsBeforeSummary = Summarize $visibleBefore
     $show = $deck.SlideShowSettings.Run()
     $stage = 'ready'
     # Wait until the show is running before reading its position.

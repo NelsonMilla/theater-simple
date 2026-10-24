@@ -61,3 +61,21 @@ $ids = [int[]]@(Get-Process | ForEach-Object { $_.Id })
   assert.ok(lines.length > 0, `No windows listed. stderr: ${result.stderr}`);
   for (const line of lines) assert.match(line, /^\d+\|[^|]*\|[01]$/);
 });
+
+test('slideshow worker summarizes window classes for error details without titles', {skip: !windows && 'Windows only'}, () => {
+  const script = `
+$ErrorActionPreference = 'Stop'
+$ast = [System.Management.Automation.Language.Parser]::ParseFile('${path.join(root, 'run-slideshow.ps1').replace(/'/g, "''")}', [ref]$null, [ref]$null)
+$definition = $ast.FindAll({ param($node) $node -is [System.Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq 'Summarize' }, $true) | Select-Object -First 1
+Invoke-Expression $definition.Extent.Text
+$sample = @(
+  [pscustomobject]@{ Handle = 1; Class = 'PPTFrameClass'; Visible = $true },
+  [pscustomobject]@{ Handle = 2; Class = 'screenClass'; Visible = $true },
+  [pscustomobject]@{ Handle = 3; Class = 'PPTFrameClass'; Visible = $true })
+[Console]::WriteLine((Summarize $sample))
+[Console]::WriteLine((Summarize @()))
+`;
+  const result = spawnSync('powershell.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', '-'], {input: script, encoding: 'utf8', windowsHide: true});
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(result.stdout.split(/\r?\n/).filter(Boolean), ['PPTFrameClass x2, screenClass', 'none']);
+});
