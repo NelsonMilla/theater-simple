@@ -24,14 +24,15 @@ jobs:
       run:
         shell: pwsh
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Read the package version
         id: version
         run: |
           $package = Get-Content -LiteralPath package.json -Raw | ConvertFrom-Json
-          $lock = Get-Content -LiteralPath package-lock.json -Raw | ConvertFrom-Json
-          if ($lock.version -ne $package.version) { throw "package-lock.json version $($lock.version) does not match package.json version $($package.version)." }
+          # -AsHashtable: the lock file's packages map has an empty-string key, which ConvertFrom-Json otherwise rejects.
+          $lock = Get-Content -LiteralPath package-lock.json -Raw | ConvertFrom-Json -AsHashtable
+          if ($lock['version'] -ne $package.version) { throw "package-lock.json version $($lock['version']) does not match package.json version $($package.version)." }
           $tag = "v$($package.version)"
           $existing = git ls-remote --tags origin "refs/tags/$tag"
           $publish = ('${{ github.event_name }}' -ne 'pull_request') -and [string]::IsNullOrWhiteSpace($existing)
@@ -53,7 +54,7 @@ jobs:
         run: ./scripts/build-windows.ps1 -PackageName "Theater Simple Windows ${{ steps.version.outputs.version }}"
 
       - name: Keep the package as a workflow artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: Theater Simple Windows ${{ steps.version.outputs.version }}
           path: |
