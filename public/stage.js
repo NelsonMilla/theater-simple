@@ -1,6 +1,6 @@
 import { createProgram } from '/program.js';
 const $ = id => document.getElementById(id);
-const program = createProgram({ program: $('program'), video: $('stage-video'), pdfCanvas: $('stage-pdf'), camera: $('stage-camera'), placeholder: $('stage-placeholder'), captions: $('stage-captions'), text: $('stage-caption-text') });
+const program = createProgram({ program: $('program'), video: $('stage-video'), pdfCanvas: $('stage-pdf'), deckArea: $('stage-deck'), camera: $('stage-camera'), placeholder: $('stage-placeholder'), captions: $('stage-captions'), text: $('stage-caption-text') });
 let attached = false;
 let captions = null;
 let connected = false;
@@ -14,7 +14,7 @@ function warning(message = '') { $('stage-warning').textContent = message; $('st
 // The controller passes MediaStreams directly within the same origin; no picture leaves this PC.
 window.TheaterStage = {
   update(next) { attached = true; program.render(next); if (connected) warning(); },
-  disconnected() { attached = false; program.render({ source: null, pdf: null, camera: null, caption: '', captionsEnabled: false, mode: 'holding' }); warning('Control panel closed. Reopen the projector from Theater Simple.'); },
+  disconnected() { attached = false; program.render({ source: null, pdf: null, deck: null, camera: null, caption: '', captionsEnabled: false, mode: 'holding' }); warning('Control panel closed. Reopen the projector from Theater Simple.'); },
 };
 window.addEventListener('message', event => {
   if (event.origin !== location.origin || event.source !== window.opener) return;
@@ -44,12 +44,14 @@ $('fullscreen-button').addEventListener('click', async () => {
 document.addEventListener('fullscreenchange', () => { $('fullscreen-button').textContent = document.fullscreenElement ? 'Exit full screen' : 'Full screen'; revealTools(); });
 document.addEventListener('pointermove', revealTools);
 document.addEventListener('keydown', revealTools);
-document.addEventListener('keydown', event => {
+// Capture phase: keys go to the control panel, which drives preview and projector together.
+window.addEventListener('keydown', event => {
   if (!attached || event.repeat || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey || event.target.closest('input,textarea,select,[contenteditable]')) return;
+  if (event.key === 'Escape' && document.querySelector('.deck-area:not(.is-hidden)')) { event.stopImmediatePropagation(); return; }
   if (['ArrowRight', 'PageDown', 'ArrowLeft', 'PageUp', 'ArrowDown', 'ArrowUp', ' '].includes(event.key)) {
-    event.preventDefault();
+    event.preventDefault(); event.stopImmediatePropagation(); revealTools();
     window.opener?.postMessage({ type: 'theater-advance', delta: ['ArrowRight', 'PageDown', 'ArrowDown', ' '].includes(event.key) ? 1 : -1 }, location.origin);
   }
-});
+}, true);
 setInterval(() => { if (attached && (!window.opener || window.opener.closed)) window.TheaterStage.disconnected(); }, 1500);
 window.addEventListener('pagehide', () => { events.close(); program.close(); });

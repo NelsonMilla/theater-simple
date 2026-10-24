@@ -2,6 +2,7 @@
 /node_modules/
 /runtime/
 /public/vendor/pdfjs/
+/public/vendor/pptx/
 /.downloads/
 /dist/
 

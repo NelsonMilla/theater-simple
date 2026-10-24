@@ -43,7 +43,10 @@ function local(req){const readOnly=['GET','HEAD'].includes(req.method)&&!req.hea
 async function body(req,max=65536){if(Number(req.headers['content-length'])>max)throw new Error('File or request is too large.');const chunks=[];let size=0;for await(const chunk of req){size+=chunk.length;if(size>max)throw new Error('File or request is too large.');chunks.push(chunk);}return Buffer.concat(chunks);}
 async function payload(req){if(!String(req.headers['content-type']||'').startsWith('application/json'))throw new Error('JSON request required.');const value=JSON.parse((await body(req)).toString());if(!value||typeof value!=='object'||Array.isArray(value))throw new Error('Invalid request.');return value;}
 const aliases={'/':'index.html','/stage':'stage.html','/demo':'demo.html'};
-const types={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.svg':'image/svg+xml','.png':'image/png','.jpg':'image/jpeg','.wasm':'application/wasm'};
+const types={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.svg':'image/svg+xml','.png':'image/png','.jpg':'image/jpeg','.wasm':'application/wasm','.woff2':'font/woff2','.woff':'font/woff','.ttf':'font/ttf','.otf':'font/otf','.txt':'text/plain; charset=utf-8'};
+// The app's pages load styles and fonts only from this PC. This keeps the PowerPoint player from
+// fetching substitute fonts from Google Fonts; scripts and the separate website window are unaffected.
+const pagePolicy="style-src 'self' 'unsafe-inline' blob: data:; font-src 'self' blob: data:";
 const allowedExtensions=new Set(['.pdf','.ppt','.pptx','.pps','.ppsx']);
 const ole=Buffer.from('d0cf11e0a1b11ae1','hex');
 function validFile(data,extension){if(extension==='.pdf')return data.subarray(0,1024).includes(Buffer.from('%PDF-'));if(['.pptx','.ppsx'].includes(extension))return data.subarray(0,4).equals(Buffer.from([80,75,3,4]));return data.subarray(0,8).equals(ole);}
@@ -149,7 +152,7 @@ const server=http.createServer(async(req,res)=>{
     const name=aliases[url.pathname]||decodeURIComponent(url.pathname.slice(1));
     const file=path.resolve(root,'public',name),publicRoot=path.resolve(root,'public')+path.sep;
     if(!file.startsWith(publicRoot)||!fs.existsSync(file)||!fs.statSync(file).isFile())return json(res,{error:'Not found.'},404);
-    return sendFile(req,res,file,types[path.extname(file)]||'application/octet-stream');
+    return sendFile(req,res,file,types[path.extname(file)]||'application/octet-stream',path.extname(file)==='.html'?{'Content-Security-Policy':pagePolicy}:{});
   }catch(error){if(!res.headersSent)json(res,{error:error instanceof SyntaxError?'Invalid JSON request.':error.message},400);else res.destroy();}
 });
 const wss=new WebSocketServer({noServer:true,maxPayload:1048576});

@@ -45,10 +45,12 @@ Copy-Item -LiteralPath (Join-Path $electronRoot 'LICENSE') -Destination (Join-Pa
 if (-not $SkipDependencies) {
     Push-Location $repoRoot
     try {
-        & $bootstrapNode (Join-Path $nodeDistribution 'node_modules/npm/bin/npm-cli.js') ci --ignore-scripts --omit=optional --no-audit --no-fund
+        & $bootstrapNode (Join-Path $nodeDistribution 'node_modules/npm/bin/npm-cli.js') ci --ignore-scripts --no-audit --no-fund
         if ($LASTEXITCODE -ne 0) { throw 'npm ci failed.' }
         & $bootstrapNode (Join-Path $PSScriptRoot 'vendor-pdfjs.mjs')
         if ($LASTEXITCODE -ne 0) { throw 'PDF.js browser asset generation failed.' }
+        & $bootstrapNode (Join-Path $PSScriptRoot 'vendor-pptx.mjs')
+        if ($LASTEXITCODE -ne 0) { throw 'PowerPoint player asset generation failed.' }
     } finally { Pop-Location }
 }
 Write-Output 'Windows runtimes are ready. Open Start Theater.cmd to launch Theater Simple.'
