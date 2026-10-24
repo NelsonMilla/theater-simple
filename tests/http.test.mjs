@@ -117,6 +117,16 @@ function assertPublicFile(file, name) {
   assert.equal('filename' in file, false, 'Storage filenames belong only in private configuration');
 }
 
+async function allFiles(directory) {
+  const results = [];
+  for (const entry of await fs.readdir(directory, {withFileTypes: true})) {
+    const location = path.join(directory, entry.name);
+    if (entry.isDirectory()) results.push(...await allFiles(location));
+    else results.push(location);
+  }
+  return results;
+}
+
 async function persistedJsonFiles(directory) {
   const results = [];
   for (const entry of await fs.readdir(directory, {withFileTypes: true})) {
@@ -366,5 +376,48 @@ describe('isolated Theater Simple HTTP integration', {concurrency: false}, () =>
     const presentation = await request(uploadedPdf.url);
     assert.equal(presentation.status, 200);
     assert.deepEqual(presentation.body, pdf);
+  });
+
+  it('lists presentations alphabetically regardless of upload order', async () => {
+    const state = await (await fetch(`${base}/api/state`)).json();
+    assert.deepEqual(state.files.map(file => file.name), [
+      'Japanese rehearsal.pdf', 'Legacy show.pps', 'Legacy talk.ppt', 'Modern show.ppsx', 'Modern talk.pptx',
+    ]);
+    const persisted = await persistedJsonFiles(dataDir);
+    const configuration = persisted.find(item => Array.isArray(item.value.files));
+    assert.equal(configuration.value.files[0].name, 'Japanese rehearsal.pdf', 'Upload order stays in the catalogue');
+    assert.equal(configuration.value.files[1].name, 'Legacy talk.ppt', 'Upload order stays in the catalogue');
+  });
+
+  it('removes one presentation together with its stored copy', async () => {
+    const target = uploadedOffice[0];
+    const removed = await post('remove-file', {id: target.id});
+    assert.equal(removed.status, 200, JSON.stringify(removed.value));
+    assert.equal(removed.value.state.files.length, 4);
+    assert.equal(removed.value.state.files.some(file => file.id === target.id), false);
+    assertRejected((await request(target.url)).status, 'Removed file must not be served');
+    assertRejected((await post('remove-file', {id: target.id})).status, 'Removing twice');
+    assertRejected((await post('remove-file', {id: '../settings'})).status, 'Unknown file ID');
+    assertRejected((await post('remove-file', {})).status, 'Missing file ID');
+    const stored = await allFiles(dataDir);
+    assert.equal(stored.some(location => path.basename(location).startsWith(target.id)), false, 'The stored copy must be deleted');
+    const state = await (await fetch(`${base}/api/state`)).json();
+    assert.equal(state.files.length, 4);
+    assert.ok(state.files.some(file => file.id === uploadedPdf.id), 'Other presentations stay listed');
+  });
+
+  it('clears the whole list, deletes stored copies, and stays empty after restart', async () => {
+    const cleared = await post('clear-files', {});
+    assert.equal(cleared.status, 200, JSON.stringify(cleared.value));
+    assert.deepEqual(cleared.value.state.files, []);
+    assertRejected((await request(uploadedPdf.url)).status, 'Cleared PDF must not be served');
+    const stored = await allFiles(dataDir);
+    assert.deepEqual(stored.filter(location => !location.endsWith('.json')), [], 'Only settings may remain in the data folder');
+    await stopServer();
+    await startServer();
+    const restarted = await (await fetch(`${base}/api/state`)).json();
+    assert.deepEqual(restarted.files, []);
+    assert.deepEqual(restarted.settings, {targetLanguage: 'ja', sourceLanguages: ['en']}, 'Clearing files keeps other settings');
+    assert.equal((await post('clear-files', {})).status, 200, 'Clearing an empty list is harmless');
   });
 });
